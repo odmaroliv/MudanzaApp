@@ -1,0 +1,114 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+@inject IJSRuntime JSRuntime
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 z-50 overflow-y-auto" 
+         id="@Id"
+         role="dialog"
+         aria-modal="true"
+         @onkeydown="@HandleKeyDown"
+         @onclick="@HandleBackdropClick"
+         tabindex="-1">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true"></div>
+
+            <!-- This centers the modal contents -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="@GetSizeClass() relative inline-block w-full text-left align-bottom bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:my-8 sm:align-middle sm:w-full"
+                 @onclick:stopPropagation="true">
+                
+                @if (ShowCloseButton)
+                {
+                    <!-- Close button -->
+                    <div class="absolute top-0 right-0 pt-4 pr-4">
+                        <button type="button" 
+                                class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500 transition ease-in-out duration-150"
+                                @onclick="Close" 
+                                aria-label="Close">
+                            <span aria-hidden="true" class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                }
+                
+                @ChildContent
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    
+    [Parameter] public bool IsVisible { get; set; }
+    
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    
+    [Parameter] public bool CloseOnEscape { get; set; } = true;
+    
+    [Parameter] public bool CloseOnBackdropClick { get; set; } = true;
+    
+    [Parameter] public string Size { get; set; } = "md";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsVisible)
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.add", "overflow-hidden");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.remove", "overflow-hidden");
+        }
+    }
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && CloseOnEscape)
+        {
+            await Close();
+        }
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (CloseOnBackdropClick)
+        {
+            await Close();
+        }
+    }
+
+    private string GetSizeClass()
+    {
+        return Size.ToLower() switch
+        {
+            "sm" => "sm:max-w-sm",
+            "md" => "sm:max-w-md",
+            "lg" => "sm:max-w-lg",
+            "xl" => "sm:max-w-xl",
+            "2xl" => "sm:max-w-2xl",
+            "3xl" => "sm:max-w-3xl",
+            "4xl" => "sm:max-w-4xl",
+            "5xl" => "sm:max-w-5xl",
+            "6xl" => "sm:max-w-6xl",
+            "7xl" => "sm:max-w-7xl",
+            "full" => "sm:max-w-full",
+            _ => "sm:max-w-lg",
+        };
+    }
+}
+

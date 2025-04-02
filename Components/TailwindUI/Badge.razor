@@ -1,0 +1,128 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<span class="@GetBadgeClasses()">
+    @if (!string.IsNullOrEmpty(IconClass))
+    {
+        <i class="@IconClass mr-1"></i>
+    }
+    @ChildContent
+</span>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public string Color { get; set; } = "primary";
+
+    [Parameter] public string Size { get; set; } = "md";
+
+    [Parameter] public string IconClass { get; set; }
+
+    [Parameter] public bool IsRounded { get; set; } = true;
+
+    [Parameter] public bool IsOutline { get; set; }
+
+    private string GetBadgeClasses()
+    {
+        var classes = new List<string>();
+
+        // Base classes
+        classes.Add("inline-flex items-center font-medium");
+
+        // Size classes
+        switch (Size.ToLower())
+        {
+            case "xs":
+                classes.Add("px-1.5 py-0.5 text-xs");
+                break;
+            case "sm":
+                classes.Add("px-2 py-0.5 text-xs");
+                break;
+            case "md":
+                classes.Add("px-2.5 py-0.5 text-sm");
+                break;
+            case "lg":
+                classes.Add("px-3 py-1 text-sm");
+                break;
+        }
+
+        // Rounded
+        classes.Add(IsRounded ? "rounded-full" : "rounded");
+
+        // Color variants
+        switch (Color.ToLower())
+        {
+            case "primary":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-primary-700 ring-1 ring-inset ring-primary-700/10 dark:text-primary-400 dark:ring-primary-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400");
+                }
+                break;
+            case "secondary":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-gray-700 ring-1 ring-inset ring-gray-700/10 dark:text-gray-400 dark:ring-gray-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-gray-50 text-gray-700 dark:bg-gray-700/30 dark:text-gray-400");
+                }
+                break;
+            case "success":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-green-700 ring-1 ring-inset ring-green-700/10 dark:text-green-400 dark:ring-green-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400");
+                }
+                break;
+            case "danger":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-red-700 ring-1 ring-inset ring-red-700/10 dark:text-red-400 dark:ring-red-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400");
+                }
+                break;
+            case "warning":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-amber-700 ring-1 ring-inset ring-amber-700/10 dark:text-amber-400 dark:ring-amber-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400");
+                }
+                break;
+            case "info":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:text-blue-400 dark:ring-blue-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400");
+                }
+                break;
+            case "light":
+                if (IsOutline)
+                {
+                    classes.Add("bg-transparent text-gray-500 ring-1 ring-inset ring-gray-300 dark:text-gray-400 dark:ring-gray-400/30");
+                }
+                else
+                {
+                    classes.Add("bg-gray-100 text-gray-800 dark:bg-gray-200/10 dark:text-gray-400");
+                }
+                break;
+        }
+
+        return string.Join(" ", classes);
+    }
+}

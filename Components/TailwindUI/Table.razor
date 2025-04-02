@@ -1,0 +1,93 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div class="@(Responsive ? "overflow-x-auto" : "")">
+    <table class="@GetTableClasses()">
+        @if (Header != null)
+        {
+            <thead class="@GetHeaderClasses()">
+                @Header
+            </thead>
+        }
+        <tbody class="@GetBodyClasses()">
+            @Body
+        </tbody>
+        @if (Footer != null)
+        {
+            <tfoot class="@GetFooterClasses()">
+                @Footer
+            </tfoot>
+        }
+    </table>
+</div>
+
+@code {
+    [Parameter] public RenderFragment Header { get; set; }
+    
+    [Parameter] public RenderFragment Body { get; set; }
+    
+    [Parameter] public RenderFragment Footer { get; set; }
+    
+    [Parameter] public bool Striped { get; set; }
+    
+    [Parameter] public bool Hoverable { get; set; }
+    
+    [Parameter] public bool Bordered { get; set; }
+    
+    [Parameter] public bool Responsive { get; set; } = true;
+    
+    [Parameter] public bool Compact { get; set; }
+    
+    [Parameter] public string Width { get; set; } = "full";
+
+    private string GetTableClasses()
+    {
+        var classes = new List<string>();
+        
+        // Base classes
+        classes.Add("min-w-full divide-y divide-gray-200 dark:divide-gray-700");
+        
+        // Width
+        if (!string.IsNullOrEmpty(Width))
+        {
+            classes.Add($"w-{Width}");
+        }
+        
+        // Border
+        if (Bordered)
+        {
+            classes.Add("border border-gray-200 dark:border-gray-700");
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetHeaderClasses()
+    {
+        var classes = "bg-gray-50 dark:bg-gray-700";
+        
+        if (Bordered)
+        {
+            classes += " border-b border-gray-200 dark:border-gray-600";
+        }
+        
+        return classes;
+    }
+
+    private string GetBodyClasses()
+    {
+        var classes = "bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700";
+        
+        if (Striped)
+        {
+            classes += " divide-y-0"; // Remove default dividers for striped rows
+        }
+        
+        return classes;
+    }
+
+    private string GetFooterClasses()
+    {
+        return "bg-gray-50 dark:bg-gray-700";
+    }
+}
+

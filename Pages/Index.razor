@@ -1,316 +1,354 @@
-﻿@* MudanzaApp/Pages/Index.razor *@
-@page "/"
+﻿@page "/"
 @inject IStringLocalizer<SharedResource> L
 @inject NavigationManager NavigationManager
 
 <PageTitle>@L["AppName"]</PageTitle>
 
-<div class="container mt-4">
-    <div class="row align-items-center">
-        <div class="col-md-6">
-            <div class="p-4">
-                <h1 class="display-4 fw-bold">@L["AppName"]</h1>
-                <p class="lead">
-                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                    {
-                        <span>Simplifique su mudanza internacional con nuestra plataforma colaborativa.</span>
-                    }
-                    else
-                    {
-                        <span>Simplify your international move with our collaborative platform.</span>
-                    }
-                </p>
-                <p>
-                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                    {
-                        <span>Organice su mudanza, colabore con familiares y amigos, y manténgase informado en cada paso del proceso.</span>
-                    }
-                    else
-                    {
-                        <span>Organize your move, collaborate with family and friends, and stay informed every step of the way.</span>
-                    }
-                </p>
-                <div class="mt-4">
-                    <AuthorizeView>
-                        <Authorized>
-                            <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
-                                <Icon Name="IconName.PlusCircle" />
-                                @L["CreateMove"]
-                            </Button>
-                            <Button Color="Color.Secondary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/my-moves"))">
-                                <Icon Name="IconName.Home" />
-                                @L["MyMoves"]
-                            </Button>
-                        </Authorized>
-                        <NotAuthorized>
-                            <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Register"))">
-                                <Icon Name="IconName.UserPlus" />
-                                @L["Register"]
-                            </Button>
-                            <Button Color="Color.Secondary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Login"))">
-                                <Icon Name="IconName.UserCheck" />
-                                @L["Login"]
-                            </Button>
-                        </NotAuthorized>
-                    </AuthorizeView>
+<div class="relative">
+    <!-- Hero section -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="text-center md:text-left">
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+                        @L["AppName"]
+                    </h1>
+                    <p class="mt-4 text-xl text-primary-100 max-w-3xl">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Simplifique su mudanza internacional con nuestra plataforma colaborativa.</span>
+                        }
+                        else
+                        {
+                            <span>Simplify your international move with our collaborative platform.</span>
+                        }
+                    </p>
+                    <p class="mt-3 text-lg text-primary-200 max-w-3xl">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Organice su mudanza, colabore con familiares y amigos, y manténgase informado en cada paso del proceso.</span>
+                        }
+                        else
+                        {
+                            <span>Organize your move, collaborate with family and friends, and stay informed every step of the way.</span>
+                        }
+                    </p>
+                    <div class="mt-8 flex flex-col sm:flex-row justify-center md:justify-start space-y-4 sm:space-y-0 sm:space-x-4">
+                        <AuthorizeView>
+                            <Authorized>
+                                <a href="/create-move" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 shadow-sm">
+                                    <svg class="-ml-1 mr-2 h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    @L["CreateMove"]
+                                </a>
+                                <a href="/my-moves" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-800 bg-opacity-60 hover:bg-opacity-70 shadow-sm">
+                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                    </svg>
+                                    @L["MyMoves"]
+                                </a>
+                            </Authorized>
+                            <NotAuthorized>
+                                <a href="/Identity/Account/Register" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 shadow-sm">
+                                    <svg class="-ml-1 mr-2 h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                                    </svg>
+                                    @L["Register"]
+                                </a>
+                                <a href="/Identity/Account/Login" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-800 bg-opacity-60 hover:bg-opacity-70 shadow-sm">
+                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    @L["Login"]
+                                </a>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <img src="/images/moving-illustration.svg" alt="Moving illustration" class="w-full max-w-md mx-auto drop-shadow-lg" />
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <img src="/images/moving-illustration.svg" alt="Moving illustration" class="img-fluid" />
+        <!-- Wave separator -->
+        <div class="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-[0px]">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" class="relative block w-full h-[60px] rotate-180">
+                <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="fill-white"></path>
+                <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="fill-white"></path>
+                <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="fill-white"></path>
+            </svg>
         </div>
     </div>
 
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <h2 class="fw-bold mb-4">
-                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                {
-                    <span>¿Por qué elegirnos?</span>
-                }
-                else
-                {
-                    <span>Why Choose Us?</span>
-                }
-            </h2>
-        </div>
-    </div>
+    <!-- Features section -->
+    <div class="bg-white dark:bg-gray-900 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>¿Por qué elegirnos?</span>
+                    }
+                    else
+                    {
+                        <span>Why Choose Us?</span>
+                    }
+                </h2>
+                <p class="mt-4 max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto">
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>Diseñado para hacer su mudanza internacional más sencilla y sin complicaciones.</span>
+                    }
+                    else
+                    {
+                        <span>Designed to make your international moving experience simpler and hassle-free.</span>
+                    }
+                </p>
+            </div>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <Icon Name="IconName.Users" Style="font-size: 3rem; color: var(--bs-primary);" />
-                    </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Colaboración en Tiempo Real</span>
-                        }
-                        else
-                        {
-                            <span>Real-time Collaboration</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Invite a familiares y amigos para colaborar en su mudanza. Cada uno puede agregar sus artículos de forma simultánea.</span>
-                        }
-                        else
-                        {
-                            <span>Invite family and friends to collaborate on your move. Everyone can add their items simultaneously.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-        <div class="col-md-4">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <Icon Name="IconName.Code" Style="font-size: 3rem; color: var(--bs-primary);" />
-                    </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Análisis de Fotos con IA</span>
-                        }
-                        else
-                        {
-                            <span>AI Photo Analysis</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Tome fotos de sus artículos y nuestra IA los identificará automáticamente, ahorrándole tiempo en la creación del inventario.</span>
-                        }
-                        else
-                        {
-                            <span>Take photos of your items and our AI will automatically identify them, saving you time in creating your inventory.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-        <div class="col-md-4">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <Icon Name="IconName.Smartphone" Style="font-size: 3rem; color: var(--bs-primary);" />
-                    </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Acceso Móvil</span>
-                        }
-                        else
-                        {
-                            <span>Mobile Access</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Acceda a su mudanza desde cualquier dispositivo. Genere un código QR para abrir rápidamente su mudanza en su teléfono.</span>
-                        }
-                        else
-                        {
-                            <span>Access your move from any device. Generate a QR code to quickly open your move on your phone.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-    </div>
-
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <h2 class="fw-bold mb-4">
-                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                {
-                    <span>¿Cómo funciona?</span>
-                }
-                else
-                {
-                    <span>How It Works</span>
-                }
-            </h2>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-md-3">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
-                            <span class="text-white fw-bold">1</span>
+            <div class="mt-16">
+                <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <div class="pt-6">
+                        <div class="flow-root bg-gray-50 dark:bg-gray-800 rounded-lg px-6 pb-8 h-full transition-all duration-200 hover:shadow-lg">
+                            <div class="-mt-6">
+                                <div>
+                                    <span class="inline-flex items-center justify-center p-3 bg-primary-600 rounded-md shadow-lg">
+                                        <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <h3 class="mt-8 text-xl font-medium text-gray-900 dark:text-white tracking-tight">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Colaboración en Tiempo Real</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Real-time Collaboration</span>
+                                    }
+                                </h3>
+                                <p class="mt-5 text-base text-gray-500 dark:text-gray-400">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Invite a familiares y amigos para colaborar en su mudanza. Cada uno puede agregar sus artículos de forma simultánea.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Invite family and friends to collaborate on your move. Everyone can add their items simultaneously.</span>
+                                    }
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Cree su Mudanza</span>
-                        }
-                        else
-                        {
-                            <span>Create Your Move</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Regístrese y cree una nueva mudanza con información básica como origen y destino.</span>
-                        }
-                        else
-                        {
-                            <span>Sign up and create a new move with basic information like origin and destination.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-        <div class="col-md-3">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
-                            <span class="text-white fw-bold">2</span>
+
+                    <div class="pt-6">
+                        <div class="flow-root bg-gray-50 dark:bg-gray-800 rounded-lg px-6 pb-8 h-full transition-all duration-200 hover:shadow-lg">
+                            <div class="-mt-6">
+                                <div>
+                                    <span class="inline-flex items-center justify-center p-3 bg-primary-600 rounded-md shadow-lg">
+                                        <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <h3 class="mt-8 text-xl font-medium text-gray-900 dark:text-white tracking-tight">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Análisis de Fotos con IA</span>
+                                    }
+                                    else
+                                    {
+                                        <span>AI Photo Analysis</span>
+                                    }
+                                </h3>
+                                <p class="mt-5 text-base text-gray-500 dark:text-gray-400">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Tome fotos de sus artículos y nuestra IA los identificará automáticamente, ahorrándole tiempo en la creación del inventario.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Take photos of your items and our AI will automatically identify them, saving you time in creating your inventory.</span>
+                                    }
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Agregue Artículos</span>
-                        }
-                        else
-                        {
-                            <span>Add Items</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Agregue sus artículos manualmente o use nuestra función de análisis de fotos con IA.</span>
-                        }
-                        else
-                        {
-                            <span>Add your items manually or use our AI photo analysis feature.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-        <div class="col-md-3">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
-                            <span class="text-white fw-bold">3</span>
+
+                    <div class="pt-6">
+                        <div class="flow-root bg-gray-50 dark:bg-gray-800 rounded-lg px-6 pb-8 h-full transition-all duration-200 hover:shadow-lg">
+                            <div class="-mt-6">
+                                <div>
+                                    <span class="inline-flex items-center justify-center p-3 bg-primary-600 rounded-md shadow-lg">
+                                        <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <h3 class="mt-8 text-xl font-medium text-gray-900 dark:text-white tracking-tight">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Acceso Móvil</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Mobile Access</span>
+                                    }
+                                </h3>
+                                <p class="mt-5 text-base text-gray-500 dark:text-gray-400">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Acceda a su mudanza desde cualquier dispositivo. Genere un código QR para abrir rápidamente su mudanza en su teléfono.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Access your move from any device. Generate a QR code to quickly open your move on your phone.</span>
+                                    }
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Envíe para Revisión</span>
-                        }
-                        else
-                        {
-                            <span>Submit for Review</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Una vez completado, envíe su mudanza para revisión y cotización por nuestro equipo.</span>
-                        }
-                        else
-                        {
-                            <span>Once completed, submit your move for review and quotation by our team.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
-        </div>
-        <div class="col-md-3">
-            <Card>
-                <CardBody>
-                    <div class="text-center mb-3">
-                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
-                            <span class="text-white fw-bold">4</span>
-                        </div>
-                    </div>
-                    <CardTitle Size="5" class="text-center">
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Seguimiento en Tiempo Real</span>
-                        }
-                        else
-                        {
-                            <span>Real-time Tracking</span>
-                        }
-                    </CardTitle>
-                    <CardText>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <span>Siga el progreso de su mudanza en cada etapa del proceso.</span>
-                        }
-                        else
-                        {
-                            <span>Follow the progress of your move at every stage of the process.</span>
-                        }
-                    </CardText>
-                </CardBody>
-            </Card>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row mt-5 mb-5">
-        <div class="col-12 text-center">
-            <h2 class="fw-bold mb-4">
+    <!-- How it works section -->
+    <div class="bg-gray-50 dark:bg-gray-800 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>¿Cómo funciona?</span>
+                    }
+                    else
+                    {
+                        <span>How It Works</span>
+                    }
+                </h2>
+            </div>
+
+            <div class="mt-12">
+                <div class="grid grid-cols-1 gap-8 md:grid-cols-4">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-primary-600 rounded-full text-white text-xl font-bold">1</div>
+                        <div class="mt-6 text-center">
+                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Cree su Mudanza</span>
+                                }
+                                else
+                                {
+                                    <span>Create Your Move</span>
+                                }
+                            </h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Regístrese y cree una nueva mudanza con información básica como origen y destino.</span>
+                                }
+                                else
+                                {
+                                    <span>Sign up and create a new move with basic information like origin and destination.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-primary-600 rounded-full text-white text-xl font-bold">2</div>
+                        <div class="mt-6 text-center">
+                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Agregue Artículos</span>
+                                }
+                                else
+                                {
+                                    <span>Add Items</span>
+                                }
+                            </h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Agregue sus artículos manualmente o use nuestra función de análisis de fotos con IA.</span>
+                                }
+                                else
+                                {
+                                    <span>Add your items manually or use our AI photo analysis feature.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-primary-600 rounded-full text-white text-xl font-bold">3</div>
+                        <div class="mt-6 text-center">
+                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Envíe para Revisión</span>
+                                }
+                                else
+                                {
+                                    <span>Submit for Review</span>
+                                }
+                            </h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Una vez completado, envíe su mudanza para revisión y cotización por nuestro equipo.</span>
+                                }
+                                else
+                                {
+                                    <span>Once completed, submit your move for review and quotation by our team.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="relative">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-primary-600 rounded-full text-white text-xl font-bold">4</div>
+                        <div class="mt-6 text-center">
+                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Seguimiento en Tiempo Real</span>
+                                }
+                                else
+                                {
+                                    <span>Real-time Tracking</span>
+                                }
+                            </h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-400">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Siga el progreso de su mudanza en cada etapa del proceso.</span>
+                                }
+                                else
+                                {
+                                    <span>Follow the progress of your move at every stage of the process.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA section -->
+    <div class="bg-primary-700 dark:bg-primary-800">
+        <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
                 @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
                 {
                     <span>¿Listo para comenzar?</span>
@@ -320,20 +358,36 @@
                     <span>Ready to get started?</span>
                 }
             </h2>
-          <AuthorizeView>
-            <Authorized Context="authContext">
-                <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
-                    <Icon Name="IconName.PlusSquare" />
-                    @L["CreateMove"]
-                </Button>
-            </Authorized>
-            <NotAuthorized Context="notAuthContext">
-                <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Register"))">
-                    <Icon Name="IconName.UserPlus" />
-                    @L["Register"]
-                </Button>
-            </NotAuthorized>
-        </AuthorizeView>
+            <p class="mt-4 text-lg leading-6 text-primary-200">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Comience a organizar su mudanza hoy y experimente la diferencia.</span>
+                }
+                else
+                {
+                    <span>Start organizing your move today and experience the difference.</span>
+                }
+            </p>
+            <div class="mt-8 flex justify-center">
+                <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+                    <Authorized>
+                        <a href="/create-move" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 shadow-sm">
+                            <svg class="-ml-1 mr-2 h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            @L["CreateMove"]
+                        </a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/Identity/Account/Register" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 shadow-sm">
+                            <svg class="-ml-1 mr-2 h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                            </svg>
+                            @L["Register"]
+                        </a>
+                    </NotAuthorized>
+                </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+            </div>
         </div>
     </div>
 </div>

@@ -1,0 +1,100 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div class="@GetCardClasses()">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public bool HasShadow { get; set; } = true;
+
+    [Parameter] public bool HasBorder { get; set; } = false;
+
+    [Parameter] public bool IsRounded { get; set; } = true;
+
+    [Parameter] public string Padding { get; set; } = "normal";
+
+    [Parameter] public string Background { get; set; } = "white";
+
+    [Parameter] public string AdditionalClasses { get; set; }
+
+    private string GetCardClasses()
+    {
+        var classes = new List<string>();
+
+        // Base classes
+        classes.Add("overflow-hidden");
+
+        // Shadow
+        if (HasShadow)
+        {
+            classes.Add("shadow-md");
+        }
+
+        // Border
+        if (HasBorder)
+        {
+            classes.Add("border border-gray-200 dark:border-gray-700");
+        }
+
+        // Rounded
+        if (IsRounded)
+        {
+            classes.Add("rounded-lg");
+        }
+
+        // Padding
+        switch (Padding.ToLower())
+        {
+            case "none":
+                break;
+            case "small":
+                classes.Add("p-3");
+                break;
+            case "normal":
+                classes.Add("p-4 sm:p-6");
+                break;
+            case "large":
+                classes.Add("p-6 sm:p-8");
+                break;
+        }
+
+        // Background
+        switch (Background.ToLower())
+        {
+            case "white":
+                classes.Add("bg-white dark:bg-gray-800");
+                break;
+            case "gray":
+                classes.Add("bg-gray-50 dark:bg-gray-900");
+                break;
+            case "primary":
+                classes.Add("bg-primary-50 dark:bg-primary-900");
+                break;
+            case "success":
+                classes.Add("bg-green-50 dark:bg-green-900");
+                break;
+            case "danger":
+                classes.Add("bg-red-50 dark:bg-red-900");
+                break;
+            case "warning":
+                classes.Add("bg-amber-50 dark:bg-amber-900");
+                break;
+            case "info":
+                classes.Add("bg-blue-50 dark:bg-blue-900");
+                break;
+            case "transparent":
+                classes.Add("bg-transparent");
+                break;
+        }
+
+        // Additional classes
+        if (!string.IsNullOrEmpty(AdditionalClasses))
+        {
+            classes.Add(AdditionalClasses);
+        }
+
+        return string.Join(" ", classes);
+    }
+}

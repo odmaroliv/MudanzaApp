@@ -1,43 +1,101 @@
-﻿@* MudanzaApp/Pages/_Host.cshtml *@
-@page "/"
+﻿@page "/"
 @using Microsoft.AspNetCore.Components.Web
 @namespace MudanzaApp.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="~/" />
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Configure Tailwind theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter var', 'sans-serif'],
+                    },
+                },
+            },
+            plugins: [
+                function ({ addVariant }) {
+                    addVariant('child', '& > *');
+                    addVariant('child-hover', '& > *:hover');
+                }
+            ],
+        };
+    </script>
+
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- App CSS -->
-    <link href="css/site.css" rel="stylesheet" />
-    <link href="MudanzaApp.styles.css" rel="stylesheet" />
+    <link href="css/tailwind-site.css" rel="stylesheet" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png" />
 
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
-<body>
+<body class="h-full">
     <component type="typeof(App)" render-mode="ServerPrerendered" />
 
-    <div id="blazor-error-ui">
+    <div id="blazor-error-ui" class="fixed inset-x-0 bottom-0 hidden p-4 z-50 bg-amber-50 border-t border-amber-200 shadow-lg">
         <environment include="Staging,Production">
-            An error has occurred. This application may no longer respond until reloaded.
+            <div class="container mx-auto flex items-center justify-between">
+                <p class="text-amber-800">An error has occurred. This application may no longer respond until reloaded.</p>
+                <div>
+                    <a href="" class="text-sm font-semibold bg-amber-100 px-3 py-1 rounded text-amber-800 hover:bg-amber-200">Reload</a>
+                    <a class="text-amber-800 cursor-pointer ml-2 hover:text-amber-900" onclick="document.getElementById('blazor-error-ui').style.display = 'none';">×</a>
+                </div>
+            </div>
         </environment>
         <environment include="Development">
-            An unhandled exception has occurred. See browser dev tools for details.
+            <div class="container mx-auto flex items-center justify-between">
+                <p class="text-amber-800">An unhandled exception has occurred. See browser dev tools for details.</p>
+                <div>
+                    <a href="" class="text-sm font-semibold bg-amber-100 px-3 py-1 rounded text-amber-800 hover:bg-amber-200">Reload</a>
+                    <a class="text-amber-800 cursor-pointer ml-2 hover:text-amber-900" onclick="document.getElementById('blazor-error-ui').style.display = 'none';">×</a>
+                </div>
+            </div>
         </environment>
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
     </div>
 
     <!-- QR Code generator script -->
@@ -45,9 +103,6 @@
 
     <!-- Blazor script -->
     <script src="_framework/blazor.server.js"></script>
-
-    <!-- Bootstrap script -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
 
     <!-- Custom JavaScript -->
     <script src="js/site.js"></script>
@@ -82,6 +137,19 @@
             return navigator.language || navigator.userLanguage;
         };
 
+        // Modal functionality
+        window.openModal = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        };
+
+        window.closeModal = (id) => {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+        };
+
         // Function to open camera
         window.openCamera = async (inputElementId) => {
             const inputElement = document.getElementById(inputElementId);
@@ -97,9 +165,7 @@
                     if (!previewElement) {
                         previewElement = document.createElement("video");
                         previewElement.id = previewId;
-                        previewElement.style.width = "100%";
-                        previewElement.style.maxWidth = "400px";
-                        previewElement.style.border = "1px solid #ccc";
+                        previewElement.className = "w-full max-w-md border border-gray-300 rounded-lg";
                         previewElement.autoplay = true;
 
                         inputElement.parentNode.insertBefore(previewElement, inputElement.nextSibling);
@@ -116,7 +182,7 @@
                     if (!captureButton) {
                         captureButton = document.createElement("button");
                         captureButton.id = captureButtonId;
-                        captureButton.className = "btn btn-primary mt-2";
+                        captureButton.className = "mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2";
                         captureButton.innerHTML = "Capture Photo";
 
                         previewElement.parentNode.insertBefore(captureButton, previewElement.nextSibling);

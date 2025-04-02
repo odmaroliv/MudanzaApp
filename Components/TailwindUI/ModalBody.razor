@@ -1,0 +1,9 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

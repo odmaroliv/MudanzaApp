@@ -1,0 +1,56 @@
+﻿@namespace MudanzaApp.Components.TailwindUI.Form
+
+<div class="flex items-center">
+    <input id="@Id"
+           type="checkbox"
+           class="@GetCheckboxClasses()"
+           disabled="@Disabled"
+           @bind="IsChecked"
+           @attributes="AdditionalAttributes" />
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label for="@Id" class="ml-2 block text-sm text-gray-900 dark:text-gray-300 @(Disabled ? "opacity-50" : "")">
+            @Label
+        </label>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string Label { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Checked { get; set; }
+    [Parameter] public EventCallback<bool> CheckedChanged { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object> AdditionalAttributes { get; set; }
+
+    private bool IsChecked
+    {
+        get => Checked;
+        set
+        {
+            if (Checked != value)
+            {
+                Checked = value;
+                _ = CheckedChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    private string GetCheckboxClasses()
+    {
+        var classes = new List<string> {
+            "h-4 w-4 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400"
+        };
+
+        if (Disabled)
+        {
+            classes.Add("opacity-50 cursor-not-allowed");
+        }
+        else
+        {
+            classes.Add("border-gray-300 dark:border-gray-600");
+        }
+
+        return string.Join(" ", classes);
+    }
+}

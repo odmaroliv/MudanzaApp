@@ -1,0 +1,10 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 sm:px-6 @(IsDivider ? "border-t border-gray-200 dark:border-gray-600" : "")">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public bool IsDivider { get; set; } = true;
+}

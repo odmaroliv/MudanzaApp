@@ -1,0 +1,42 @@
+﻿@namespace MudanzaApp.Components.TailwindUI.Form
+
+<div class="@(Inline ? "flex items-center" : "")">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label for="@Id" class="@GetLabelClasses()">
+            @Label
+            @if (Required)
+            {
+                <span class="text-red-500 ml-1">*</span>
+            }
+        </label>
+    }
+
+    <div class="@(Inline ? "ml-3" : "mt-1")">
+        @ChildContent
+    </div>
+
+    @if (!string.IsNullOrEmpty(HelpText))
+    {
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">@HelpText</p>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorText))
+    {
+        <p class="mt-2 text-sm text-red-600 dark:text-red-500">@ErrorText</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string Label { get; set; }
+    [Parameter] public string HelpText { get; set; }
+    [Parameter] public string ErrorText { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Inline { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    private string GetLabelClasses() =>
+        Inline ? "inline-block text-sm font-medium text-gray-700 dark:text-gray-300"
+               : "block text-sm font-medium text-gray-700 dark:text-gray-300";
+}

@@ -1,0 +1,214 @@
+﻿/* Custom CSS to complement Tailwind */
+
+/* Scrollbar styles for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #4a5568;
+}
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: #718096;
+    }
+
+/* Focus outline styles */
+*:focus {
+    outline: 2px solid rgba(14, 165, 233, 0.5);
+    outline-offset: 2px;
+}
+
+/* Blazor errors */
+#blazor-error-ui {
+    display: none;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Animation classes */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-in-out;
+}
+
+.animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-in-out;
+}
+
+.animate-slide-in-up {
+    animation: slideInUp 0.3s ease-in-out;
+}
+
+.animate-slide-in-down {
+    animation: slideInDown 0.3s ease-in-out;
+}
+
+/* Additional utility classes */
+.text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-lg {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Page transitions */
+.page {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Form control focus styles */
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.form-checkbox:focus,
+.form-radio:focus {
+    @apply ring-2 ring-primary-500 ring-offset-2 outline-none;
+}
+
+/* Custom form validation styles */
+.field-validation-error {
+    @apply text-red-600 text-sm mt-1 block;
+}
+
+.input-validation-error {
+    @apply border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500;
+}
+
+/* Reconnection overlay styles */
+#components-reconnect-modal {
+    display: none;
+}
+
+    #components-reconnect-modal.components-reconnect-show,
+    #components-reconnect-modal.components-reconnect-failed,
+    #components-reconnect-modal.components-reconnect-rejected {
+        display: flex;
+    }
+
+.components-reconnect-show .reconnect-show,
+.components-reconnect-failed .reconnect-failed,
+.components-reconnect-rejected .reconnect-rejected {
+    display: block;
+}
+
+.components-reconnect-failed .reconnect-show,
+.components-reconnect-rejected .reconnect-show,
+.components-reconnect-show .reconnect-failed,
+.components-reconnect-show .reconnect-rejected,
+.components-reconnect-failed .reconnect-rejected,
+.components-reconnect-rejected .reconnect-failed {
+    display: none;
+}
+
+/* Custom styles for tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+    .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 120px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+/* Custom switch/toggle */
+.toggle-checkbox:checked {
+    @apply right-0 border-primary-500;
+    right: 0;
+    border-color: #0EA5E9;
+}
+
+    .toggle-checkbox:checked + .toggle-label {
+        @apply bg-primary-500;
+        background-color: #0EA5E9;
+    }

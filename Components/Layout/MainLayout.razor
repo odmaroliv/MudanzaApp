@@ -10,158 +10,302 @@
 
 <PageTitle>@GetPageTitle()</PageTitle>
 
-<Layout>
-    <LayoutHeader Fixed>
-        <Bar Background="Background.Primary" ThemeContrast="ThemeContrast.Light">
-            <BarBrand>
-                <BarItem>
-                    <BarLink To="">
-                        <BarIcon IconName="IconName.Truck" />
-                        @L["AppName"]
-                    </BarLink>
-                </BarItem>
-            </BarBrand>
-            <BarToggler />
-            <BarMenu>
-                <BarStart>
-                    <BarItem>
-                        <BarLink To="">
-                            <BarIcon IconName="IconName.Home" />
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <header class="bg-white shadow-sm dark:bg-gray-800 sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="flex-shrink-0 flex items-center">
+                            <a href="" class="flex items-center">
+                                <i class="fas fa-truck text-primary-600 text-xl mr-2"></i>
+                                <span class="text-xl font-bold text-gray-900 dark:text-white">@L["AppName"]</span>
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="" class="@GetNavLinkClass("")">
+                            <i class="fas fa-home mr-1"></i>
                             @L["Home"]
-                        </BarLink>
-                    </BarItem>
+                        </a>
+                        <AuthorizeView>
+                            <Authorized>
+                                <a href="dashboard" class="@GetNavLinkClass("dashboard")">
+                                    <i class="fas fa-chart-line mr-1"></i>
+                                    @L["Dashboard"]
+                                </a>
+                                <a href="my-moves" class="@GetNavLinkClass("my-moves")">
+                                    <i class="fas fa-boxes mr-1"></i>
+                                    @L["MyMoves"]
+                                </a>
+                                <a href="create-move" class="@GetNavLinkClass("create-move")">
+                                    <i class="fas fa-plus-circle mr-1"></i>
+                                    @L["CreateMove"]
+                                </a>
+                                <AuthorizeView Roles="Admin">
+                                    <div class="relative" @onclick="ToggleAdminMenu" @onclick:stopPropagation>
+                                        <button type="button" class="group inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 hover:border-gray-300 dark:text-gray-400 dark:hover:text-white">
+                                            <i class="fas fa-cog mr-1"></i>
+                                            @L["AdminDashboard"]
+                                            <i class="fas fa-chevron-down ml-1 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
+                                        </button>
+                                        @if (showAdminMenu)
+                                        {
+                                            <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                                <a href="admin/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                                    <i class="fas fa-tachometer-alt mr-2"></i>
+                                                    @L["Dashboard"]
+                                                </a>
+                                                <a href="admin/users" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                                    <i class="fas fa-users mr-2"></i>
+                                                    @L["Users"]
+                                                </a>
+                                                <a href="admin/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                                    <i class="fas fa-cogs mr-2"></i>
+                                                    @L["Settings"]
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                </AuthorizeView>
+                            </Authorized>
+                        </AuthorizeView>
+                    </div>
+                </div>
+
+                <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                    <!-- Language Dropdown -->
+                    <div class="ml-3 relative" @onclick="ToggleLanguageMenu" @onclick:stopPropagation>
+                        <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                            <i class="fas fa-globe mr-1"></i>
+                            @L["Language"]
+                            <i class="fas fa-chevron-down ml-1 h-4 w-4"></i>
+                        </button>
+                        @if (showLanguageMenu)
+                        {
+                            <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                <button @onclick="@(() => ChangeLanguage("en-US"))" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                    @L["English"]
+                                </button>
+                                <button @onclick="@(() => ChangeLanguage("es-MX"))" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                    @L["Spanish"]
+                                </button>
+                            </div>
+                        }
+                    </div>
+
                     <AuthorizeView>
                         <Authorized>
-                            <BarItem>
-                                <BarLink To="dashboard">
-                                    <BarIcon IconName="IconName.Dashboard" />
-                                    @L["Dashboard"]
-                                </BarLink>
-                            </BarItem>
-                            <BarItem>
-                                <BarLink To="my-moves">
-                                    <BarIcon IconName="IconName.Home" />
-                                    @L["MyMoves"]
-                                </BarLink>
-                            </BarItem>
-                            <BarItem>
-                                <BarLink To="create-move">
-                                    <BarIcon IconName="IconName.ClinicMedical" />
-                                    @L["CreateMove"]
-                                </BarLink>
-                            </BarItem>
-                            <AuthorizeView Roles="Admin" Context="adminContext">
-                                <BarItem>
-                                    <BarDropdown>
-                                        <BarDropdownToggle>
-                                            <BarIcon IconName="IconName.Indent" />
-                                            @L["AdminDashboard"]
-                                        </BarDropdownToggle>
-                                        <BarDropdownMenu>
-                                            <BarDropdownItem To="admin/dashboard">
-                                                <BarIcon IconName="IconName.Dashboard" />
-                                                @L["Dashboard"]
-                                            </BarDropdownItem>
-                                            <BarDropdownItem To="admin/users">
-                                                <BarIcon IconName="IconName.Users" />
-                                                @L["Users"]
-                                            </BarDropdownItem>
-                                            <BarDropdownItem To="admin/settings">
-                                                <BarIcon IconName="IconName.Key" />
-                                                @L["Settings"]
-                                            </BarDropdownItem>
-                                        </BarDropdownMenu>
-                                    </BarDropdown>
-                                </BarItem>
+                            <!-- Profile dropdown -->
+                            <div class="ml-3 relative" @onclick="ToggleUserMenu" @onclick:stopPropagation>
+                                <div>
+                                    <button type="button" class="flex items-center max-w-xs text-sm rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none">
+                                        <span class="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <span class="ml-2">@context.User.Identity?.Name</span>
+                                        <i class="fas fa-chevron-down ml-1 h-4 w-4"></i>
+                                    </button>
+                                </div>
+                                @if (showUserMenu)
+                                {
+                                    <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                        <a href="Identity/Account/Manage" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                            <i class="fas fa-user-cog mr-2"></i>
+                                            @L["Profile"]
+                                        </a>
+                                        <a href="photo-credits" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                            <i class="fas fa-camera mr-2"></i>
+                                            @L["PhotoCredits"]
+                                        </a>
+                                        <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                                        <a href="Identity/Account/LogOut" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
+                                            <i class="fas fa-sign-out-alt mr-2"></i>
+                                            @L["Logout"]
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <div class="flex items-center">
+                                <a href="Identity/Account/Register" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    <i class="fas fa-user-plus mr-1"></i>
+                                    @L["Register"]
+                                </a>
+                                <a href="Identity/Account/Login" class="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                    <i class="fas fa-sign-in-alt mr-1"></i>
+                                    @L["Login"]
+                                </a>
+                            </div>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <!-- Mobile menu button -->
+                    <button @onclick="ToggleMobileMenu" type="button" class="bg-white dark:bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500">
+                        <span class="sr-only">Open main menu</span>
+                        @if (showMobileMenu)
+                        {
+                            <i class="fas fa-times block h-6 w-6"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-bars block h-6 w-6"></i>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        @if (showMobileMenu)
+        {
+            <div class="sm:hidden">
+                <div class="pt-2 pb-3 space-y-1">
+                    <a href="" class="@GetMobileNavLinkClass("")">
+                        <i class="fas fa-home mr-1"></i>
+                        @L["Home"]
+                    </a>
+                    <AuthorizeView>
+                        <Authorized>
+                            <a href="dashboard" class="@GetMobileNavLinkClass("dashboard")">
+                                <i class="fas fa-chart-line mr-1"></i>
+                                @L["Dashboard"]
+                            </a>
+                            <a href="my-moves" class="@GetMobileNavLinkClass("my-moves")">
+                                <i class="fas fa-boxes mr-1"></i>
+                                @L["MyMoves"]
+                            </a>
+                            <a href="create-move" class="@GetMobileNavLinkClass("create-move")">
+                                <i class="fas fa-plus-circle mr-1"></i>
+                                @L["CreateMove"]
+                            </a>
+                            <AuthorizeView Roles="Admin">
+                                <button @onclick="ToggleMobileAdminMenu" class="@GetMobileNavLinkClass("admin")">
+                                    <i class="fas fa-cog mr-1"></i>
+                                    @L["AdminDashboard"]
+                                    <i class="@(showMobileAdminMenu ? "fas fa-chevron-up" : "fas fa-chevron-down") ml-auto"></i>
+                                </button>
+                                @if (showMobileAdminMenu)
+                                {
+                                    <div class="ml-4 space-y-1">
+                                        <a href="admin/dashboard" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
+                                            <i class="fas fa-tachometer-alt mr-2"></i>
+                                            @L["Dashboard"]
+                                        </a>
+                                        <a href="admin/users" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
+                                            <i class="fas fa-users mr-2"></i>
+                                            @L["Users"]
+                                        </a>
+                                        <a href="admin/settings" class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
+                                            <i class="fas fa-cogs mr-2"></i>
+                                            @L["Settings"]
+                                        </a>
+                                    </div>
+                                }
                             </AuthorizeView>
                         </Authorized>
                     </AuthorizeView>
-                </BarStart>
-                <BarEnd>
-                    <BarItem>
-                        <BarDropdown>
-                            <BarDropdownToggle>
-                                <BarIcon IconName="IconName.Globe" />
-                                @L["Language"]
-                            </BarDropdownToggle>
-                            <BarDropdownMenu>
-                                <BarDropdownItem Clicked="@(() => ChangeLanguage("en-US"))">
-                                    @L["English"]
-                                </BarDropdownItem>
-                                <BarDropdownItem Clicked="@(() => ChangeLanguage("es-MX"))">
-                                    @L["Spanish"]
-                                </BarDropdownItem>
-                            </BarDropdownMenu>
-                        </BarDropdown>
-                    </BarItem>
+                </div>
+                <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                     <AuthorizeView>
-                        <Authorized Context="authContext">
-                            <BarItem>
-                                <BarDropdown>
-                                    <BarDropdownToggle>
-                                        <BarIcon IconName="IconName.User" />
-                                        @authContext.User.Identity?.Name
-                                    </BarDropdownToggle>
-                                    <BarDropdownMenu>
-                                        <BarDropdownItem To="Identity/Account/Manage">
-                                            <BarIcon IconName="IconName.Settings" />
-                                            @L["Profile"]
-                                        </BarDropdownItem>
-                                        <BarDropdownItem To="photo-credits">
-                                            <BarIcon IconName="IconName.Camera" />
-                                            @L["PhotoCredits"]
-                                        </BarDropdownItem>
-                                        <BarDropdownDivider />
-                                        <BarDropdownItem To="Identity/Account/LogOut">
-                                            <BarIcon IconName="IconName.Running" />
-                                            @L["Logout"]
-                                        </BarDropdownItem>
-                                    </BarDropdownMenu>
-                                </BarDropdown>
-                            </BarItem>
+                        <Authorized>
+                            <div class="flex items-center px-4">
+                                <div class="flex-shrink-0">
+                                    <span class="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center text-white">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-base font-medium text-gray-800 dark:text-white">@context.User.Identity?.Name</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 space-y-1">
+                                <a href="Identity/Account/Manage" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    <i class="fas fa-user-cog mr-2"></i>
+                                    @L["Profile"]
+                                </a>
+                                <a href="photo-credits" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    <i class="fas fa-camera mr-2"></i>
+                                    @L["PhotoCredits"]
+                                </a>
+                                <a href="Identity/Account/LogOut" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>
+                                    @L["Logout"]
+                                </a>
+                            </div>
                         </Authorized>
-                        <NotAuthorized Context="notAuthContext">
-                            <BarItem>
-                                <BarLink To="Identity/Account/Register">
-                                    <BarIcon IconName="IconName.UserPlus" />
+                        <NotAuthorized>
+                            <div class="mt-3 space-y-1">
+                                <a href="Identity/Account/Register" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    <i class="fas fa-user-plus mr-2"></i>
                                     @L["Register"]
-                                </BarLink>
-                            </BarItem>
-                            <BarItem>
-                                <BarLink To="Identity/Account/Login">
-                                    <BarIcon IconName="IconName.UserCheck" />
+                                </a>
+                                <a href="Identity/Account/Login" class="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
                                     @L["Login"]
-                                </BarLink>
-                            </BarItem>
+                                </a>
+                            </div>
                         </NotAuthorized>
                     </AuthorizeView>
-                </BarEnd>
-            </BarMenu>
-        </Bar>
-    </LayoutHeader>
-    <LayoutContent Padding="Padding.Is4.OnX">
-        <Container Fluid>
-            <ToastContainer />
+                    <div class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                        <button @onclick="ToggleMobileLanguageMenu" class="flex items-center w-full px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                            <i class="fas fa-globe mr-2"></i>
+                            @L["Language"]
+                            <i class="@(showMobileLanguageMenu ? "fas fa-chevron-up" : "fas fa-chevron-down") ml-auto"></i>
+                        </button>
+                        @if (showMobileLanguageMenu)
+                        {
+                            <div class="ml-4 space-y-1">
+                                <button @onclick="@(() => ChangeLanguage("en-US"))" class="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    @L["English"]
+                                </button>
+                                <button @onclick="@(() => ChangeLanguage("es-MX"))" class="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                                    @L["Spanish"]
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </header>
+
+    <main>
+        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             @Body
-        </Container>
-    </LayoutContent>
-    <LayoutFooter Fixed>
-        <Footer>
-            <Container>
-                <Text>
+        </div>
+    </main>
+
+    <footer class="bg-white dark:bg-gray-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-4 text-center sm:text-left">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                     &copy; @DateTime.Now.Year - @L["AppName"]
-                </Text>
-            </Container>
-        </Footer>
-    </LayoutFooter>
-</Layout>
+                </p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-4"></div>
+
+<!-- Modal container -->
+<div id="modal-container"></div>
 
 @code {
     private string currentCulture = "en-US";
+    private bool showUserMenu = false;
+    private bool showLanguageMenu = false;
+    private bool showAdminMenu = false;
+    private bool showMobileMenu = false;
+    private bool showMobileAdminMenu = false;
+    private bool showMobileLanguageMenu = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Intentar cargar la cultura guardada
+        // Try to load saved culture
         try
         {
             var result = await ProtectedSessionStore.GetAsync<string>("culture");
@@ -171,7 +315,7 @@
             }
             else
             {
-                // Intentar obtener la cultura del usuario si está autenticado
+                // Try to get culture from user if authenticated
                 var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
                 if (authState.User.Identity.IsAuthenticated)
                 {
@@ -183,12 +327,69 @@
                 }
             }
 
-            // Aplicar la cultura
+            // Apply culture
             await ApplyCultureAsync(currentCulture);
         }
         catch (Exception)
         {
-            // En caso de error, usar la cultura predeterminada
+            // In case of error, use default culture
+        }
+    }
+
+    private void ToggleUserMenu()
+    {
+        showUserMenu = !showUserMenu;
+        showLanguageMenu = false;
+        showAdminMenu = false;
+    }
+
+    private void ToggleLanguageMenu()
+    {
+        showLanguageMenu = !showLanguageMenu;
+        showUserMenu = false;
+        showAdminMenu = false;
+    }
+
+    private void ToggleAdminMenu()
+    {
+        showAdminMenu = !showAdminMenu;
+        showUserMenu = false;
+        showLanguageMenu = false;
+    }
+
+    private void ToggleMobileMenu()
+    {
+        showMobileMenu = !showMobileMenu;
+    }
+
+    private void ToggleMobileAdminMenu()
+    {
+        showMobileAdminMenu = !showMobileAdminMenu;
+    }
+
+    private void ToggleMobileLanguageMenu()
+    {
+        showMobileLanguageMenu = !showMobileLanguageMenu;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Close dropdowns when clicking outside
+        if (firstRender)
+        {
+            _ = JSRuntime.InvokeVoidAsync("document.addEventListener", "click", DotNetObjectReference.Create(this).Invoke("CloseAllDropdowns"));
+        }
+    }
+
+    [JSInvokable]
+    public void CloseAllDropdowns()
+    {
+        if (showUserMenu || showLanguageMenu || showAdminMenu)
+        {
+            showUserMenu = false;
+            showLanguageMenu = false;
+            showAdminMenu = false;
+            StateHasChanged();
         }
     }
 
@@ -199,10 +400,10 @@
             currentCulture = culture;
             await ApplyCultureAsync(culture);
 
-            // Guardar la preferencia de cultura
+            // Save culture preference
             await ProtectedSessionStore.SetAsync("culture", culture);
 
-            // Actualizar la preferencia del usuario si está autenticado
+            // Update user's preference if authenticated
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity.IsAuthenticated)
             {
@@ -214,40 +415,60 @@
                 }
             }
 
-            // Forzar recarga para aplicar los cambios de cultura
+            // Force reload to apply culture changes
             NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
         }
     }
 
     private async Task ApplyCultureAsync(string culture)
     {
-        // Establecer la cultura actual
+        // Set current culture
         CultureInfo.CurrentCulture = new CultureInfo(culture);
         CultureInfo.CurrentUICulture = new CultureInfo(culture);
     }
 
     private string GetPageTitle()
     {
-        // Obtener el título de la página basado en la ruta actual
+        // Get page title based on current route
         var uri = new Uri(NavigationManager.Uri);
         var path = uri.AbsolutePath;
-        
+
         if (path == "/")
             return L["AppName"].Value;
-            
+
         if (path.Contains("/dashboard"))
             return $"{L["Dashboard"].Value} - {L["AppName"].Value}";
-            
+
         if (path.Contains("/my-moves"))
             return $"{L["MyMoves"].Value} - {L["AppName"].Value}";
-            
+
         if (path.Contains("/create-move"))
             return $"{L["CreateMove"].Value} - {L["AppName"].Value}";
-            
+
         if (path.Contains("/admin"))
             return $"{L["AdminDashboard"].Value} - {L["AppName"].Value}";
-            
-        // Título genérico para otras páginas
+
+        // Generic title for other pages
         return L["AppName"].Value;
+    }
+
+    private string GetNavLinkClass(string path)
+    {
+        var currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLower();
+        bool isActive = currentPath.StartsWith(path) && (path.Length > 0 || currentPath.Length == 0);
+
+        return isActive
+            ? "border-primary-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium";
+    }
+
+    private string GetMobileNavLinkClass(string path)
+    {
+        var currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLower();
+        bool isActive = currentPath.StartsWith(path) && (path.Length > 0 || currentPath.Length == 0);
+
+        return isActive
+            ? "bg-primary-50 dark:bg-gray-700 border-primary-500 text-primary-700 dark:text-white flex items-center justify-between pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+            : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white flex items-center justify-between pl-3 pr-4 py-2 border-l-4 text-base font-medium";
     }
 }

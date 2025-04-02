@@ -11,149 +11,273 @@
 
 <PageTitle>@L["CreateMove"] - @L["AppName"]</PageTitle>
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle Size="4">@L["CreateMove"]</CardTitle>
-                    </CardHeader>
-                    <CardBody>
-                        <Steps @bind-SelectedStep="@currentStep">
-                            <Step Name="basic-info">
-                                <Marker>
-                                    <Icon Name="IconName.FileAlt" />
-                                </Marker>
-                                <Caption>@L["BasicInfo"]</Caption>
-                        </Step>
-                    </Steps>
+    <div class="py-4">
+        <!-- Page header -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg px-4 py-5 border-b border-gray-200 dark:border-gray-700 sm:px-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                @L["CreateMove"]
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+            {
+                <span>Complete la información básica para comenzar a organizar su mudanza.</span>
+            }
+            else
+            {
+                <span>Fill in the basic information to start organizing your move.</span>
+            }
+        </p>
+    </div>
 
-                    <div class="mt-4">
-                        @if (currentStep == "basic-info")
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <!-- Steps indicator -->
+                    <nav aria-label="Progress" class="mb-8">
+                        <ol role="list" class="space-y-4 md:flex md:space-y-0 md:space-x-8">
+                            <li class="md:flex-1">
+                                <div class="flex flex-col border-l-4 border-primary-600 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                                    <span class="text-sm font-medium text-primary-600 dark:text-primary-400">@L["Step1"]</span>
+                                    <span class="text-sm font-medium">@L["BasicInfo"]</span>
+                                </div>
+                            </li>
+                            <li class="md:flex-1">
+                                <div class="flex flex-col border-l-4 border-gray-200 dark:border-gray-700 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Step2"]</span>
+                                    <span class="text-sm font-medium">@L["AddItems"]</span>
+                                </div>
+                            </li>
+                            <li class="md:flex-1">
+                                <div class="flex flex-col border-l-4 border-gray-200 dark:border-gray-700 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Step3"]</span>
+                                    <span class="text-sm font-medium">@L["ReviewSubmit"]</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+
+                    <form class="space-y-6" @onsubmit="CreateMudanzaAsync">
+                        <div>
+                            <label for="move-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                @L["MoveName"] <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                <input type="text"
+                                       id="move-name"
+                                       @bind="newMudanza.Name"
+                                       class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md @(invalidName ? "border-red-300" : "")"
+                                       placeholder="@L["MoveNamePlaceholder"]"
+                                       required />
+                                @if (invalidName)
+                                {
+                                    <p class="mt-2 text-sm text-red-600 dark:text-red-500">@L["MoveNameRequired"]</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="origin" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                @L["Origin"] <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                <input type="text"
+                                       id="origin"
+                                       @bind="newMudanza.OriginLocation"
+                                       class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md @(invalidOrigin ? "border-red-300" : "")"
+                                       placeholder="@L["OriginPlaceholder"]"
+                                       required />
+                                @if (invalidOrigin)
+                                {
+                                    <p class="mt-2 text-sm text-red-600 dark:text-red-500">@L["OriginRequired"]</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="destination" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                @L["Destination"] <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                <input type="text"
+                                       id="destination"
+                                       @bind="newMudanza.DestinationLocation"
+                                       class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md @(invalidDestination ? "border-red-300" : "")"
+                                       placeholder="@L["DestinationPlaceholder"]"
+                                       required />
+                                @if (invalidDestination)
+                                {
+                                    <p class="mt-2 text-sm text-red-600 dark:text-red-500">@L["DestinationRequired"]</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="collaborative"
+                                       type="checkbox"
+                                       @bind="isCollaborative"
+                                       class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded" />
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="collaborative" class="font-medium text-gray-700 dark:text-gray-300">@L["IsCollaborative"]</label>
+                                <p class="text-gray-500 dark:text-gray-400">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Seleccione esta opción si desea que otras personas puedan colaborar en esta mudanza.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Select this option if you want other people to be able to collaborate on this move.</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        @if (isCollaborative)
                         {
-                            <Validations @ref="validations" Model="@newMudanza" ValidateOnLoad="false">
-                                <Field>
-                                    <FieldLabel>@L["MoveName"]</FieldLabel>
-                                        <Validation Validator="@ValidateName">
-                                            <TextEdit @bind-Text="@newMudanza.Name" Placeholder="@L["MoveNamePlaceholder"]">
-                                                <Feedback>
-                                                    <ValidationError>@L["MoveNameRequired"]</ValidationError>
-                                                </Feedback>
-                                            </TextEdit>
-                                        </Validation>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel>@L["CollaborativeMove"]</FieldLabel>
-                                        <Check TValue="bool" @bind-Checked="@isCollaborative">
-                                            @L["IsCollaborative"]
-                                    </Check>
-                                    <FieldHelp>
+                            <div>
+                                <label for="collaborator-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    @L["CollaboratorName"]
+                                </label>
+                                <div class="mt-1">
+                                    <input type="text"
+                                           id="collaborator-name"
+                                           @bind="newMudanza.CollaboratorName"
+                                           class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                           placeholder="@L["CollaboratorNamePlaceholder"]" />
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
                                         {
-                                            <span>Seleccione esta opción si desea que otras personas puedan colaborar en esta mudanza.</span>
+                                            <span>Opcional: nombre para identificar esta colaboración.</span>
                                         }
                                         else
                                         {
-                                            <span>Select this option if you want other people to be able to collaborate on this move.</span>
+                                            <span>Optional: name to identify this collaboration.</span>
                                         }
-                                    </FieldHelp>
-                                </Field>
+                                    </p>
+                                </div>
+                            </div>
+                        }
 
-                                @if (isCollaborative)
+                        <div class="flex justify-end space-x-3">
+                            <button type="button"
+                                    @onclick="CancelCreation"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg class="mr-2 -ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                                @L["Cancel"]
+                            </button>
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                    disabled="@isSubmitting">
+                                @if (isSubmitting)
                                 {
-                                    <Field>
-                                        <FieldLabel>@L["CollaboratorName"]</FieldLabel>
-                                            <TextEdit @bind-Text="@newMudanza.CollaboratorName" Placeholder="@L["CollaboratorNamePlaceholder"]" />
-                                            <FieldHelp>
-                                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                                            {
-                                                <span>Opcional: nombre para identificar esta colaboración.</span>
-                                            }
-                                            else
-                                            {
-                                                <span>Optional: name to identify this collaboration.</span>
-                                            }
-                                        </FieldHelp>
-                                    </Field>
+                                    <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent mr-2 -ml-1"></div>
+                                    @L["Processing"]
                                 }
+                                else
+                                {
+                                    <svg class="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    @L["CreateMove"]
+                                }
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-                                <Field>
-                                    <FieldLabel>@L["Origin"]</FieldLabel>
-                                        <Validation Validator="@ValidateOrigin">
-                                            <TextEdit @bind-Text="@newMudanza.OriginLocation" Placeholder="@L["OriginPlaceholder"]">
-                                                <Feedback>
-                                                    <ValidationError>@L["OriginRequired"]</ValidationError>
-                                                </Feedback>
-                                            </TextEdit>
-                                        </Validation>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel>@L["Destination"]</FieldLabel>
-                                        <Validation Validator="@ValidateDestination">
-                                            <TextEdit @bind-Text="@newMudanza.DestinationLocation" Placeholder="@L["DestinationPlaceholder"]">
-                                                <Feedback>
-                                                    <ValidationError>@L["DestinationRequired"]</ValidationError>
-                                                </Feedback>
-                                            </TextEdit>
-                                        </Validation>
-                                    </Field>
-                                </Validations>
-                        }
-                    </div>
-                </CardBody>
-                <CardFooter>
-                    <div class="d-flex justify-content-between">
-                        <Button Color="Color.Secondary" Clicked="@CancelCreation">
-                            <Icon Name="IconName.Times" />
-                            @L["Cancel"]
-                        </Button>
-                        <Button Color="Color.Primary" Clicked="@CreateMudanzaAsync">
-                            <Icon Name="IconName.Check" />
-                            @L["CreateMove"]
-                        </Button>
-                    </div>
-                </CardFooter>
-            </Card>
-
-            <!-- Consejos útiles -->
-            <Card Class="mt-4">
-                <CardHeader>
-                    <CardTitle Size="5">
-                        <Icon Name="IconName.Lightbulb" />
+        <div>
+            <div class="bg-gray-50 dark:bg-gray-700 shadow-sm rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                        <svg class="inline-block h-5 w-5 text-primary-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
                         @L["Tips"]
-                    </CardTitle>
-                </CardHeader>
-                <CardBody>
-                    <ul>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                        {
-                            <li>Dé un nombre descriptivo a su mudanza para identificarla fácilmente.</li>
-                            <li>Si varias personas van a agregar artículos, marque la opción de mudanza colaborativa.</li>
-                            <li>Una vez creada, podrá invitar a otros a colaborar compartiendo un enlace.</li>
-                            <li>Después de crear la mudanza, podrá agregar sus artículos y detalles adicionales.</li>
-                        }
-                        else
-                        {
-                            <li>Give your move a descriptive name to easily identify it.</li>
-                            <li>If multiple people will be adding items, check the collaborative move option.</li>
-                            <li>Once created, you can invite others to collaborate by sharing a link.</li>
-                            <li>After creating the move, you'll be able to add your items and additional details.</li>
-                        }
-                    </ul>
-                </CardBody>
-            </Card>
+                    </h2>
+                    <div class="space-y-4 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-primary-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <p>
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Dé un nombre descriptivo a su mudanza para identificarla fácilmente.</span>
+                                }
+                                else
+                                {
+                                    <span>Give your move a descriptive name to easily identify it.</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-primary-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <p>
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Si varias personas van a agregar artículos, marque la opción de mudanza colaborativa.</span>
+                                }
+                                else
+                                {
+                                    <span>If multiple people will be adding items, check the collaborative move option.</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-primary-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <p>
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Una vez creada, podrá invitar a otros a colaborar compartiendo un enlace.</span>
+                                }
+                                else
+                                {
+                                    <span>Once created, you can invite others to collaborate by sharing a link.</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-primary-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <p>
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Después de crear la mudanza, podrá agregar sus artículos y detalles adicionales.</span>
+                                }
+                                else
+                                {
+                                    <span>After creating the move, you'll be able to add your items and additional details.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @code {
-    private string currentStep = "basic-info";
-    private Data.Models.Mudanza newMudanza = new();
+    private Mudanza newMudanza = new();
     private bool isCollaborative = false;
-    private Validations validations;
+    private bool isSubmitting = false;
     private string userId;
+
+    // Validation flags
+    private bool invalidName = false;
+    private bool invalidOrigin = false;
+    private bool invalidDestination = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -172,22 +296,13 @@
         }
     }
 
-    private void ValidateName(ValidatorEventArgs e)
+    private bool ValidateForm()
     {
-        var value = Convert.ToString(e.Value);
-        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
-    }
+        invalidName = string.IsNullOrWhiteSpace(newMudanza.Name);
+        invalidOrigin = string.IsNullOrWhiteSpace(newMudanza.OriginLocation);
+        invalidDestination = string.IsNullOrWhiteSpace(newMudanza.DestinationLocation);
 
-    private void ValidateOrigin(ValidatorEventArgs e)
-    {
-        var value = Convert.ToString(e.Value);
-        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
-    }
-
-    private void ValidateDestination(ValidatorEventArgs e)
-    {
-        var value = Convert.ToString(e.Value);
-        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
+        return !invalidName && !invalidOrigin && !invalidDestination;
     }
 
     private void CancelCreation()
@@ -197,41 +312,46 @@
 
     private async Task CreateMudanzaAsync()
     {
-        if (await validations.ValidateAll())
-        {
-            try
-            {
-                newMudanza.UserId = userId;
-                newMudanza.Status = MudanzaStatus.DraftOpen;
-                newMudanza.CreatedAt = DateTime.UtcNow;
-
-                // Si no es colaborativa, asegurarse de que el campo CollaboratorName esté vacío
-                if (!isCollaborative)
-                {
-                    newMudanza.CollaboratorName = null;
-                }
-
-                var result = await MudanzaService.CreateMudanzaAsync(newMudanza);
-
-                if (result != null && result.Id > 0)
-                {
-                    ToastService.Success(L["MoveCreatedSuccess"]);
-                    NavigationManager.NavigateTo($"/mudanza/{result.Id}");
-                }
-                else
-                {
-                    ToastService.Error(L["ErrorCreatingMove"]);
-                }
-            }
-            catch (Exception ex)
-            {
-                ToastService.Error(L["ErrorCreatingMove"]);
-                Console.Error.WriteLine($"Error creating move: {ex.Message}");
-            }
-        }
-        else
+        if (!ValidateForm())
         {
             ToastService.Warning(L["PleaseCompleteRequiredFields"]);
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+
+            newMudanza.UserId = userId;
+            newMudanza.Status = MudanzaStatus.DraftOpen;
+            newMudanza.CreatedAt = DateTime.UtcNow;
+
+            // If not collaborative, ensure the CollaboratorName field is empty
+            if (!isCollaborative)
+            {
+                newMudanza.CollaboratorName = null;
+            }
+
+            var result = await MudanzaService.CreateMudanzaAsync(newMudanza);
+
+            if (result != null && result.Id > 0)
+            {
+                ToastService.Success(L["MoveCreatedSuccess"]);
+                NavigationManager.NavigateTo($"/mudanza/{result.Id}");
+            }
+            else
+            {
+                ToastService.Error(L["ErrorCreatingMove"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorCreatingMove"]);
+            Console.Error.WriteLine($"Error creating move: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
         }
     }
 }

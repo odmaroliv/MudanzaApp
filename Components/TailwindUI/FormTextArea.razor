@@ -1,0 +1,65 @@
+﻿@namespace MudanzaApp.Components.TailwindUI.Form
+
+<textarea id="@Id"
+          class="@GetTextAreaClasses()"
+          placeholder="@Placeholder"
+          disabled="@Disabled"
+          readonly="@ReadOnly"
+          maxlength="@MaxLength"
+          required="@Required"
+          rows="@Rows"
+          @bind="CurrentValue"
+          @bind:event="oninput"
+         
+          @attributes="AdditionalAttributes"></textarea>
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string Placeholder { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public int? MaxLength { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public int Rows { get; set; } = 3;
+    [Parameter] public string Value { get; set; }
+    [Parameter] public EventCallback<string> OnChange { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object> AdditionalAttributes { get; set; }
+
+    private string CurrentValue
+    {
+        get => Value;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                _ = OnChange.InvokeAsync(value);
+            }
+        }
+    }
+
+    private string GetTextAreaClasses()
+    {
+        var classes = new List<string> {
+            "block w-full sm:text-sm rounded-md",
+            "focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
+        };
+
+        if (HasError)
+        {
+            classes.Add("border-red-300 text-red-900 placeholder-red-300 dark:border-red-500 dark:text-red-100 dark:placeholder-red-400");
+        }
+        else
+        {
+            classes.Add("border-gray-300 text-gray-900 placeholder-gray-400 dark:border-gray-600 dark:text-white dark:placeholder-gray-500 dark:bg-gray-700");
+        }
+
+        if (Disabled)
+        {
+            classes.Add("opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800");
+        }
+
+        return string.Join(" ", classes);
+    }
+}

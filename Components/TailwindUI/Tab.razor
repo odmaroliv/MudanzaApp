@@ -1,0 +1,73 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div>
+    <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            @foreach (var tab in Tabs)
+            {
+                <button type="button"
+                        @onclick="() => SelectTab(tab.Name)"
+                        class="@GetTabClasses(tab.Name)"
+                        aria-selected="@(tab.Name == ActiveTab)">
+                    @if (!string.IsNullOrEmpty(tab.Icon))
+                    {
+                        <i class="@tab.Icon mr-2"></i>
+                    }
+                    @tab.DisplayName
+                </button>
+            }
+        </nav>
+    </div>
+    <div class="py-4">
+        @foreach (var tab in Tabs)
+        {
+            if (tab.Name == ActiveTab)
+            {
+                @tab.Content
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TabItem> Tabs { get; set; } = new List<TabItem>();
+
+    [Parameter] public string ActiveTab { get; set; }
+
+    [Parameter] public EventCallback<string> ActiveTabChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // If no active tab is set, select the first one
+        if (string.IsNullOrEmpty(ActiveTab) && Tabs.Count > 0)
+        {
+            ActiveTab = Tabs.First().Name;
+        }
+    }
+
+    private string GetTabClasses(string tabName)
+    {
+        var baseClasses = "inline-flex items-center px-1 py-3 border-b-2 text-sm font-medium focus:outline-none";
+
+        if (tabName == ActiveTab)
+        {
+            return $"{baseClasses} border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400";
+        }
+
+        return $"{baseClasses} border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600";
+    }
+
+    private async Task SelectTab(string tabName)
+    {
+        ActiveTab = tabName;
+        await ActiveTabChanged.InvokeAsync(tabName);
+    }
+
+    public class TabItem
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string Icon { get; set; }
+        public RenderFragment Content { get; set; }
+    }
+}

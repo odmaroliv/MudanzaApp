@@ -1,0 +1,122 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<div class="@GetAlertClasses()">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <div class="flex-shrink-0">
+            <i class="@Icon"></i>
+        </div>
+    }
+    <div class="@(string.IsNullOrEmpty(Icon) ? "" : "ml-3")">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <h3 class="@GetTitleClasses()">@Title</h3>
+        }
+        <div class="@(string.IsNullOrEmpty(Title) ? "" : "mt-2")">
+            <p class="@GetTextClasses()">
+                @ChildContent
+            </p>
+        </div>
+    </div>
+    @if (Dismissible)
+    {
+        <div class="ml-auto pl-3">
+            <div class="-mx-1.5 -my-1.5">
+                <button type="button" @onclick="OnDismiss" class="@GetDismissClasses()">
+                    <span class="sr-only">Dismiss</span>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public string Title { get; set; }
+
+    [Parameter] public string Type { get; set; } = "info";
+
+    [Parameter] public bool Dismissible { get; set; }
+
+    [Parameter] public string Icon { get; set; }
+
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private string GetAlertClasses()
+    {
+        var baseClasses = "flex p-4 rounded-md";
+
+        switch (Type.ToLower())
+        {
+            case "success":
+                return $"{baseClasses} bg-green-50 dark:bg-green-800/20";
+            case "danger":
+            case "error":
+                return $"{baseClasses} bg-red-50 dark:bg-red-800/20";
+            case "warning":
+                return $"{baseClasses} bg-amber-50 dark:bg-amber-800/20";
+            case "info":
+            default:
+                return $"{baseClasses} bg-blue-50 dark:bg-blue-800/20";
+        }
+    }
+
+    private string GetTitleClasses()
+    {
+        var baseClasses = "text-sm font-medium";
+
+        switch (Type.ToLower())
+        {
+            case "success":
+                return $"{baseClasses} text-green-800 dark:text-green-300";
+            case "danger":
+            case "error":
+                return $"{baseClasses} text-red-800 dark:text-red-300";
+            case "warning":
+                return $"{baseClasses} text-amber-800 dark:text-amber-300";
+            case "info":
+            default:
+                return $"{baseClasses} text-blue-800 dark:text-blue-300";
+        }
+    }
+
+    private string GetTextClasses()
+    {
+        var baseClasses = "text-sm";
+
+        switch (Type.ToLower())
+        {
+            case "success":
+                return $"{baseClasses} text-green-700 dark:text-green-200";
+            case "danger":
+            case "error":
+                return $"{baseClasses} text-red-700 dark:text-red-200";
+            case "warning":
+                return $"{baseClasses} text-amber-700 dark:text-amber-200";
+            case "info":
+            default:
+                return $"{baseClasses} text-blue-700 dark:text-blue-200";
+        }
+    }
+
+    private string GetDismissClasses()
+    {
+        var baseClasses = "inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2";
+
+        switch (Type.ToLower())
+        {
+            case "success":
+                return $"{baseClasses} bg-green-50 text-green-500 hover:bg-green-100 focus:ring-green-500 dark:bg-green-800/40 dark:text-green-300 dark:hover:bg-green-800/60";
+            case "danger":
+            case "error":
+                return $"{baseClasses} bg-red-50 text-red-500 hover:bg-red-100 focus:ring-red-500 dark:bg-red-800/40 dark:text-red-300 dark:hover:bg-red-800/60";
+            case "warning":
+                return $"{baseClasses} bg-amber-50 text-amber-500 hover:bg-amber-100 focus:ring-amber-500 dark:bg-amber-800/40 dark:text-amber-300 dark:hover:bg-amber-800/60";
+            case "info":
+            default:
+                return $"{baseClasses} bg-blue-50 text-blue-500 hover:bg-blue-100 focus:ring-blue-500 dark:bg-blue-800/40 dark:text-blue-300 dark:hover:bg-blue-800/60";
+        }
+    }
+}

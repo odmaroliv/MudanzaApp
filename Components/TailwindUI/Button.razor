@@ -1,0 +1,164 @@
+﻿@namespace MudanzaApp.Components.TailwindUI
+
+<button type="@Type"
+        class="@GetButtonClasses()"
+        disabled="@Disabled"
+        @onclick="@OnClick">
+    @if (!string.IsNullOrEmpty(IconClass))
+    {
+        <i class="@IconClass mr-2"></i>
+    }
+    @ChildContent
+</button>
+
+@code {
+    [Parameter] public string Type { get; set; } = "button";
+
+    [Parameter] public string Color { get; set; } = "primary";
+
+    [Parameter] public string Size { get; set; } = "md";
+
+    [Parameter] public string IconClass { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public bool IsOutline { get; set; }
+
+    [Parameter] public bool IsBlock { get; set; }
+
+    [Parameter] public bool IsRounded { get; set; } = true;
+
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string GetButtonClasses()
+    {
+        var classes = new List<string>();
+
+        // Base classes
+        classes.Add("inline-flex items-center justify-center border font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200");
+
+        // Size classes
+        switch (Size.ToLower())
+        {
+            case "xs":
+                classes.Add("px-2.5 py-1.5 text-xs");
+                break;
+            case "sm":
+                classes.Add("px-3 py-2 text-sm leading-4");
+                break;
+            case "md":
+                classes.Add("px-4 py-2 text-sm");
+                break;
+            case "lg":
+                classes.Add("px-4 py-2 text-base");
+                break;
+            case "xl":
+                classes.Add("px-6 py-3 text-base");
+                break;
+        }
+
+        // Rounded
+        classes.Add(IsRounded ? "rounded-md" : "");
+
+        // Block display
+        classes.Add(IsBlock ? "w-full" : "");
+
+        // Disabled state
+        if (Disabled)
+        {
+            classes.Add("opacity-50 cursor-not-allowed");
+        }
+
+        // Color variants
+        switch (Color.ToLower())
+        {
+            case "primary":
+                if (IsOutline)
+                {
+                    classes.Add("border-primary-600 text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-primary-600 hover:bg-primary-700 focus:ring-primary-500");
+                }
+                break;
+            case "secondary":
+                if (IsOutline)
+                {
+                    classes.Add("border-gray-500 text-gray-700 bg-transparent hover:bg-gray-50 focus:ring-gray-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-gray-600 hover:bg-gray-700 focus:ring-gray-500");
+                }
+                break;
+            case "success":
+                if (IsOutline)
+                {
+                    classes.Add("border-green-600 text-green-600 bg-transparent hover:bg-green-50 focus:ring-green-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-green-600 hover:bg-green-700 focus:ring-green-500");
+                }
+                break;
+            case "danger":
+                if (IsOutline)
+                {
+                    classes.Add("border-red-600 text-red-600 bg-transparent hover:bg-red-50 focus:ring-red-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500");
+                }
+                break;
+            case "warning":
+                if (IsOutline)
+                {
+                    classes.Add("border-amber-500 text-amber-600 bg-transparent hover:bg-amber-50 focus:ring-amber-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-amber-500 hover:bg-amber-600 focus:ring-amber-500");
+                }
+                break;
+            case "info":
+                if (IsOutline)
+                {
+                    classes.Add("border-blue-500 text-blue-600 bg-transparent hover:bg-blue-50 focus:ring-blue-500");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-blue-500 hover:bg-blue-600 focus:ring-blue-500");
+                }
+                break;
+            case "light":
+                if (IsOutline)
+                {
+                    classes.Add("border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50 focus:ring-gray-200");
+                }
+                else
+                {
+                    classes.Add("border-gray-300 text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-200");
+                }
+                break;
+            case "dark":
+                if (IsOutline)
+                {
+                    classes.Add("border-gray-800 text-gray-900 bg-transparent hover:bg-gray-100 focus:ring-gray-700");
+                }
+                else
+                {
+                    classes.Add("border-transparent text-white bg-gray-800 hover:bg-gray-900 focus:ring-gray-700");
+                }
+                break;
+            case "link":
+                classes.Add("border-transparent text-primary-600 bg-transparent hover:underline focus:ring-0 focus:ring-offset-0 px-0 py-0");
+                break;
+        }
+
+        return string.Join(" ", classes);
+    }
+}
