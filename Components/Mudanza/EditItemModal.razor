@@ -1,0 +1,392 @@
+﻿@* MudanzaApp/Components/Mudanza/EditItemModal.razor *@
+@inject IMudanzaService MudanzaService
+@inject IStorageService StorageService
+@inject IStringLocalizer<SharedResource> L
+@inject IToastService ToastService
+
+<Modal @ref="modal" Closed="OnModalClosed">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader>
+            <ModalTitle>@L["EditItem"]</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody>
+            @if (isLoading)
+            {
+                <div class="d-flex justify-content-center">
+                    <Spinner Color="Color.Primary" Size="Size.Large" />
+                </div>
+            }
+            else
+            {
+                <Validations @ref="validations" Model="@item" ValidateOnLoad="false">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <Field>
+                                <FieldLabel>@L["ItemName"]</FieldLabel>
+                                <Validation Validator="@ValidateName">
+                                    <TextEdit @bind-Text="@item.Name" Placeholder="@L["ItemNamePlaceholder"]">
+                                        <Feedback>
+                                            <ValidationError>@L["ItemNameRequired"]</ValidationError>
+                                        </Feedback>
+                                    </TextEdit>
+                                </Validation>
+                            </Field>
+                                <Field>
+                                    <FieldLabel>@L["Category"]</FieldLabel>
+                                    <Select TValue="string" @bind-SelectedValue="@item.Category">
+                                        <SelectItem Value="@("Furniture")">@L["Category_Furniture"]</SelectItem>
+                                        <SelectItem Value="@("Electronics")">@L["Category_Electronics"]</SelectItem>
+                                        <SelectItem Value="@("Kitchen")">@L["Category_Kitchen"]</SelectItem>
+                                        <SelectItem Value="@("Clothing")">@L["Category_Clothing"]</SelectItem>
+                                        <SelectItem Value="@("Decoration")">@L["Category_Decoration"]</SelectItem>
+                                        <SelectItem Value="@("Books")">@L["Category_Books"]</SelectItem>
+                                        <SelectItem Value="@("Tools")">@L["Category_Tools"]</SelectItem>
+                                        <SelectItem Value="@("Other")">@L["Category_Other"]</SelectItem>
+                                    </Select>
+                                </Field>
+                            <Field>
+                                <FieldLabel>@L["Quantity"]</FieldLabel>
+                                <Validation Validator="@ValidateQuantity">
+                                    <NumericEdit TValue="int" @bind-Value="@item.Quantity" Min="1">
+                                        <Feedback>
+                                            <ValidationError>@L["QuantityInvalid"]</ValidationError>
+                                        </Feedback>
+                                    </NumericEdit>
+                                </Validation>
+                            </Field>
+                            <Field>
+                                <Check TValue="bool" @bind-Checked="@item.IsNew">
+                                    @L["IsNew"]
+                                </Check>
+                            </Field>
+                            <Field>
+                                <Check TValue="bool" @bind-Checked="@item.IsHazmat">
+                                    @L["IsHazmat"]
+                                </Check>
+                                @if (item.IsHazmat)
+                                {
+                                    <FieldHelp>
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>Los materiales peligrosos pueden requerir documentación adicional.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Hazardous materials may require additional documentation.</span>
+                                        }
+                                    </FieldHelp>
+                                }
+                            </Field>
+                        </div>
+                        <div class="col-md-6">
+                            <Field>
+                                <FieldLabel>@L["Weight"]</FieldLabel>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <Validation Validator="@ValidateWeight">
+                                            <NumericEdit TValue="double" @bind-Value="@item.Weight" Min="0">
+                                                <Feedback>
+                                                    <ValidationError>@L["WeightInvalid"]</ValidationError>
+                                                </Feedback>
+                                            </NumericEdit>
+                                        </Validation>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <Check TValue="bool" @bind-Checked="@item.IsWeightTotal">
+                                            @L["IsWeightTotal"]
+                                        </Check>
+                                    </div>
+                                </div>
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Dimensions"]</FieldLabel>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <NumericEdit TValue="double?" @bind-Value="@item.Length" Min="0" Placeholder="@L["Length"]" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <NumericEdit TValue="double?" @bind-Value="@item.Width" Min="0" Placeholder="@L["Width"]" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <NumericEdit TValue="double?" @bind-Value="@item.Height" Min="0" Placeholder="@L["Height"]" />
+                                    </div>
+                                </div>
+                                <FieldHelp>@L["DimensionsInfo"]</FieldHelp>
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["DeclaredValue"]</FieldLabel>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <Validation Validator="@ValidateValue">
+                                            <Addons>
+                                                <Addon AddonType="AddonType.Start">
+                                                    <AddonLabel>$</AddonLabel>
+                                                </Addon>
+                                                <Addon AddonType="AddonType.Body">
+                                                    <NumericEdit TValue="decimal" @bind-Value="@item.DeclaredValue" Min="0">
+                                                        <Feedback>
+                                                            <ValidationError>@L["ValueInvalid"]</ValidationError>
+                                                        </Feedback>
+                                                    </NumericEdit>
+                                                </Addon>
+                                            </Addons>
+                                        </Validation>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <Check TValue="bool" @bind-Checked="@item.IsValueTotal">
+                                            @L["IsValueTotal"]
+                                        </Check>
+                                    </div>
+                                </div>
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Description"]</FieldLabel>
+                                <MemoEdit @bind-Text="@item.Description" Rows="2" Placeholder="@L["DescriptionPlaceholder"]" />
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Photo"]</FieldLabel>
+                                @if (!string.IsNullOrEmpty(item.PhotoUrl))
+                                {
+                                    <div class="mb-2">
+                                        <img src="@item.PhotoUrl" class="img-thumbnail" style="max-height: 150px;" alt="@item.Name" />
+                                    </div>
+                                    <div class="mb-2">
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="RemovePhoto">
+                                            <Icon Name="IconName.Times" />
+                                            @L["RemovePhoto"]
+                                        </Button>
+                                    </div>
+                                }
+                                <FileEdit Changed="@OnFileSelected" />
+                                <FieldHelp>@L["PhotoInfo"]</FieldHelp>
+                            </Field>
+                            @if (isUploading)
+                            {
+                                <Progress Value="@uploadProgress" Class="mt-2">
+                                    <ProgressBar Value="@uploadProgress">@uploadProgress%</ProgressBar>
+                                </Progress>
+                            }
+                            else if (!string.IsNullOrEmpty(previewUrl) && previewUrl != item.PhotoUrl)
+                            {
+                                <div class="mt-2">
+                                    <img src="@previewUrl" class="img-thumbnail" style="max-height: 150px;" alt="New preview" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </Validations>
+            }
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@OnCancel">
+                @L["Cancel"]
+            </Button>
+            <Button Color="Color.Primary" Clicked="@UpdateItemAsync" Disabled="@(isLoading || isUploading)">
+                <Icon Name="IconName.Save" />
+                @L["SaveChanges"]
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    [Parameter] public MudanzaItem ItemToEdit { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnItemUpdated { get; set; }
+    [Parameter] public string UserId { get; set; }
+
+    private Modal modal;
+    private Validations validations;
+    private MudanzaItem item;
+    private bool isLoading = true;
+    private string previewUrl = "";
+    private bool isUploading = false;
+    private int uploadProgress = 0;
+    private IFileEntry selectedFile;
+    private bool shouldRemovePhoto = false;
+
+    protected override void OnInitialized()
+    {
+        LoadItem();
+    }
+
+    // Método público para mostrar el modal
+    public void ShowModal()
+    {
+        modal.Show();
+    }
+
+    private void LoadItem()
+    {
+        if (ItemToEdit == null)
+        {
+            item = new MudanzaItem
+            {
+                Quantity = 1,
+                Category = "Furniture",
+                IsWeightTotal = false,
+                IsValueTotal = false,
+                Weight = 0,
+                DeclaredValue = 0
+            };
+        }
+        else
+        {
+            item = new MudanzaItem
+            {
+                Id = ItemToEdit.Id,
+                MudanzaId = ItemToEdit.MudanzaId,
+                Name = ItemToEdit.Name,
+                Category = ItemToEdit.Category,
+                Weight = ItemToEdit.Weight,
+                IsWeightTotal = ItemToEdit.IsWeightTotal,
+                IsNew = ItemToEdit.IsNew,
+                Length = ItemToEdit.Length,
+                Width = ItemToEdit.Width,
+                Height = ItemToEdit.Height,
+                DeclaredValue = ItemToEdit.DeclaredValue,
+                IsValueTotal = ItemToEdit.IsValueTotal,
+                Description = ItemToEdit.Description,
+                IsHazmat = ItemToEdit.IsHazmat,
+                Quantity = ItemToEdit.Quantity,
+                CreatedBy = ItemToEdit.CreatedBy,
+                PhotoUrl = ItemToEdit.PhotoUrl,
+                CreatedAt = ItemToEdit.CreatedAt
+            };
+        }
+        previewUrl = item.PhotoUrl;
+        isLoading = false;
+    }
+
+    private void ValidateName(ValidatorEventArgs e)
+    {
+        var value = Convert.ToString(e.Value);
+        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void ValidateQuantity(ValidatorEventArgs e)
+    {
+        var value = Convert.ToInt32(e.Value);
+        e.Status = value <= 0 ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void ValidateWeight(ValidatorEventArgs e)
+    {
+        var value = Convert.ToDouble(e.Value);
+        e.Status = value <= 0 ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void ValidateValue(ValidatorEventArgs e)
+    {
+        var value = Convert.ToDecimal(e.Value);
+        e.Status = value < 0 ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private async Task OnFileSelected(FileChangedEventArgs e)
+    {
+        try
+        {
+            if (e.Files.Length == 0)
+            {
+                selectedFile = null;
+                previewUrl = item.PhotoUrl;
+                return;
+            }
+            selectedFile = e.Files[0];
+            if (!selectedFile.Type.StartsWith("image/"))
+            {
+                ToastService.Error(L["OnlyImagesAllowed"]);
+                selectedFile = null;
+                return;
+            }
+            var buffer = new byte[selectedFile.Size];
+            await selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).ReadAsync(buffer);
+            previewUrl = $"data:{selectedFile.Type};base64,{Convert.ToBase64String(buffer)}";
+            shouldRemovePhoto = false;
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorProcessingFile"]);
+            Console.Error.WriteLine($"Error processing file: {ex.Message}");
+        }
+    }
+
+    private void RemovePhoto()
+    {
+        previewUrl = "";
+        selectedFile = null;
+        shouldRemovePhoto = true;
+    }
+
+    private async Task UpdateItemAsync()
+    {
+        if (!(await validations.ValidateAll()))
+        {
+            ToastService.Warning(L["PleaseCompleteRequiredFields"]);
+            return;
+        }
+        try
+        {
+            isUploading = true;
+            uploadProgress = 0;
+            if (selectedFile != null)
+            {
+                uploadProgress = 20;
+                using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                uploadProgress = 50;
+                var fileName = $"{Path.GetRandomFileName()}{Path.GetExtension(selectedFile.Name)}";
+                var photoUrl = await StorageService.UploadFileAsync(
+                    memoryStream.ToArray(),
+                    fileName,
+                    selectedFile.Type);
+                uploadProgress = 80;
+                if (!string.IsNullOrEmpty(item.PhotoUrl))
+                {
+                    await StorageService.DeleteFileAsync(item.PhotoUrl);
+                }
+                item.PhotoUrl = photoUrl;
+            }
+            else if (shouldRemovePhoto && !string.IsNullOrEmpty(item.PhotoUrl))
+            {
+                await StorageService.DeleteFileAsync(item.PhotoUrl);
+                item.PhotoUrl = null;
+            }
+            uploadProgress = 90;
+            item.UpdatedAt = DateTime.UtcNow;
+            var result = await MudanzaService.UpdateItemAsync(item);
+            if (result)
+            {
+                ToastService.Success(L["ItemUpdatedSuccess"]);
+                await OnItemUpdated.InvokeAsync();
+                modal.Hide();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorUpdatingItem"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorUpdatingItem"]);
+            Console.Error.WriteLine($"Error updating item: {ex.Message}");
+        }
+        finally
+        {
+            isUploading = false;
+            uploadProgress = 0;
+        }
+    }
+
+    private void OnCancel()
+    {
+        modal.Hide();
+    }
+
+    private async Task OnModalClosed()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

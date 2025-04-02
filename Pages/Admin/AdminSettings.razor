@@ -1,0 +1,694 @@
+﻿@* MudanzaApp/Pages/Admin/AdminSettings.razor *@
+@page "/admin/settings"
+@using Blazorise
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Microsoft.JSInterop
+@using MudanzaApp.Resources
+@using System.Globalization
+@attribute [Authorize(Roles = "Admin")]
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+
+<PageTitle>@L["Settings"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>@L["Settings"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Configure los parámetros de la aplicación.</span>
+                }
+                else
+                {
+                    <span>Configure application parameters.</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <Tabs>
+        <Items>
+            <Tab Name="general">
+                <Icon Name="IconName.Settings" />
+                @L["General"]
+            </Tab>
+            <Tab Name="pricing">
+                <Icon Name="IconName.DollarSign" />
+                @L["Pricing"]
+            </Tab>
+            <Tab Name="email">
+                <Icon Name="IconName.Mail" />
+                @L["EmailSettings"]
+            </Tab>
+            <Tab Name="integrations">
+                <Icon Name="IconName.Link" />
+                @L["Integrations"]
+            </Tab>
+            <Tab Name="system">
+                <Icon Name="IconName.Server" />
+                @L["SystemInfo"]
+            </Tab>
+        </Items>
+        <Content>
+            <TabPanel Name="general">
+                <Card>
+                    <CardBody>
+                        <h4 class="mb-3">@L["ApplicationSettings"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["ApplicationName"]</FieldLabel>
+                            <TextEdit @bind-Text="@appSettings.ApplicationName" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["BaseUrl"]</FieldLabel>
+                            <TextEdit @bind-Text="@appSettings.BaseUrl" />
+                            <FieldHelp>@L["BaseUrlHelp"]</FieldHelp>
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["DefaultLanguage"]</FieldLabel>
+                            <Select TValue="string" @bind-SelectedValue="@appSettings.DefaultLanguage">
+                                <SelectItem Value="@("en-US")">@L["English"]</SelectItem>
+                                <SelectItem Value="@("es-MX")">@L["Spanish"]</SelectItem>
+                            </Select>
+                        </Field>
+                        
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="@appSettings.RequireEmailConfirmation">
+                                @L["RequireEmailConfirmation"]
+                            </Check>
+                        </Field>
+                        
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="@appSettings.AllowRegistration">
+                                @L["AllowRegistration"]
+                            </Check>
+                        </Field>
+                        
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="@appSettings.EnableNotifications">
+                                @L["EnableNotifications"]
+                            </Check>
+                        </Field>
+                        
+                        <div class="d-flex justify-content-end mt-3">
+                            <Button Color="Color.Primary" Clicked="SaveGeneralSettings">
+                                <Icon Name="IconName.Save" />
+                                @L["SaveSettings"]
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+            
+            <TabPanel Name="pricing">
+                <Card>
+                    <CardBody>
+                        <h4 class="mb-3">@L["PhotoCreditPricing"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["FreeCreditsForNewUsers"]</FieldLabel>
+                            <NumericEdit TValue="int" @bind-Value="@pricingSettings.FreeCreditsForNewUsers" Min="0" />
+                        </Field>
+                        
+                        <div class="mb-4">
+                            <h5>@L["CreditPackages"]</h5>
+                            
+                            <Table Striped Hoverable>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHeaderCell>@L["Credits"]</TableHeaderCell>
+                                        <TableHeaderCell>@L["Price"]</TableHeaderCell>
+                                        <TableHeaderCell>@L["Description"]</TableHeaderCell>
+                                        <TableHeaderCell>@L["IsMostPopular"]</TableHeaderCell>
+                                        <TableHeaderCell>@L["Actions"]</TableHeaderCell>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    @foreach (var package in pricingSettings.CreditPackages)
+                                    {
+                                        <TableRow>
+                                            <TableRowCell>
+                                                <NumericEdit TValue="int" @bind-Value="@package.Credits" Min="1" Size="Size.Small" />
+                                            </TableRowCell>
+                                            <TableRowCell>
+                                                <NumericEdit TValue="decimal" @bind-Value="@package.Price" Min="0" Step="0.01m" Size="Size.Small">
+                                                    <Prepend>
+                                                        <Button>$</Button>
+                                                    </Prepend>
+                                                </NumericEdit>
+                                            </TableRowCell>
+                                            <TableRowCell>
+                                                <TextEdit @bind-Text="@package.Description" Size="Size.Small" />
+                                            </TableRowCell>
+                                            <TableRowCell>
+                                                <Check TValue="bool" @bind-Checked="@package.IsMostPopular" />
+                                            </TableRowCell>
+                                            <TableRowCell>
+                                                <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => RemoveCreditPackage(package))">
+                                                    <Icon Name="IconName.Times" />
+                                                </Button>
+                                            </TableRowCell>
+                                        </TableRow>
+                                    }
+                                </TableBody>
+                            </Table>
+                            
+                            <div class="mt-2">
+                                <Button Color="Color.Secondary" Clicked="AddCreditPackage">
+                                    <Icon Name="IconName.PlusCircle" />
+                                    @L["AddPackage"]
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        <h4 class="mt-4 mb-3">@L["StripeSettings"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["StripePublicKey"]</FieldLabel>
+                            <TextEdit @bind-Text="@pricingSettings.StripePublicKey" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["StripeSecretKey"]</FieldLabel>
+                            <TextEdit @bind-Text="@pricingSettings.StripeSecretKey" Role="TextRole.Password" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["StripeWebhookSecret"]</FieldLabel>
+                            <TextEdit @bind-Text="@pricingSettings.StripeWebhookSecret" Role="TextRole.Password" />
+                        </Field>
+                        
+                        <div class="d-flex justify-content-end mt-3">
+                            <Button Color="Color.Primary" Clicked="SavePricingSettings">
+                                <Icon Name="IconName.Save" />
+                                @L["SaveSettings"]
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+            
+            <TabPanel Name="email">
+                <Card>
+                    <CardBody>
+                        <h4 class="mb-3">@L["EmailServerSettings"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["SmtpServer"]</FieldLabel>
+                            <TextEdit @bind-Text="@emailSettings.SmtpServer" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["SmtpPort"]</FieldLabel>
+                            <NumericEdit TValue="int" @bind-Value="@emailSettings.SmtpPort" Min="0" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["SmtpUsername"]</FieldLabel>
+                            <TextEdit @bind-Text="@emailSettings.SmtpUsername" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["SmtpPassword"]</FieldLabel>
+                            <TextEdit @bind-Text="@emailSettings.SmtpPassword" Role="TextRole.Password" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["SenderEmail"]</FieldLabel>
+                            <TextEdit @bind-Text="@emailSettings.SenderEmail" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["SenderName"]</FieldLabel>
+                            <TextEdit @bind-Text="@emailSettings.SenderName" />
+                        </Field>
+                        
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="@emailSettings.EnableSsl">
+                                @L["EnableSsl"]
+                            </Check>
+                        </Field>
+                        
+                        <div class="mt-3">
+                            <Button Color="Color.Secondary" Clicked="TestEmailSettings">
+                                <Icon Name="IconName.PaperPlane" />
+                                @L["TestEmailSettings"]
+                            </Button>
+                            
+                            <Button Color="Color.Primary" Clicked="SaveEmailSettings">
+                                <Icon Name="IconName.Save" />
+                                @L["SaveSettings"]
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+            
+            <TabPanel Name="integrations">
+                <Card>
+                    <CardBody>
+                        <h4 class="mb-3">@L["AWSSettings"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["S3BucketName"]</FieldLabel>
+                            <TextEdit @bind-Text="@integrationSettings.S3BucketName" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["S3Region"]</FieldLabel>
+                            <TextEdit @bind-Text="@integrationSettings.S3Region" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["S3AccessKey"]</FieldLabel>
+                            <TextEdit @bind-Text="@integrationSettings.S3AccessKey" />
+                        </Field>
+                        
+                        <Field>
+                            <FieldLabel>@L["S3SecretKey"]</FieldLabel>
+                            <TextEdit @bind-Text="@integrationSettings.S3SecretKey" Role="TextRole.Password" />
+                        </Field>
+                        
+                        <h4 class="mt-4 mb-3">@L["OpenAISettings"]</h4>
+                        
+                        <Field>
+                            <FieldLabel>@L["OpenAIApiKey"]</FieldLabel>
+                            <TextEdit @bind-Text="@integrationSettings.OpenAIApiKey" Role="TextRole.Password" />
+                        </Field>
+                        
+                        <div class="d-flex justify-content-end mt-3">
+                            <Button Color="Color.Primary" Clicked="SaveIntegrationSettings">
+                                <Icon Name="IconName.Save" />
+                                @L["SaveSettings"]
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+            
+            <TabPanel Name="system">
+                <Card>
+                    <CardBody>
+                        <h4 class="mb-3">@L["SystemInformation"]</h4>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 text-md-end">
+                                <strong>@L["ApplicationVersion"]:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @systemInfo.ApplicationVersion
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 text-md-end">
+                                <strong>@L["DotNetVersion"]:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @systemInfo.DotNetVersion
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 text-md-end">
+                                <strong>@L["OperatingSystem"]:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @systemInfo.OperatingSystem
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 text-md-end">
+                                <strong>@L["ServerTime"]:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @systemInfo.ServerTime
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 text-md-end">
+                                <strong>@L["DatabaseProvider"]:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @systemInfo.DatabaseProvider
+                            </div>
+                        </div>
+                        
+                        <h4 class="mt-4 mb-3">@L["Maintenance"]</h4>
+                        
+                        <div class="mt-3">
+                            <Button Color="Color.Secondary" Clicked="PurgeTemporaryFiles">
+                                <Icon Name="IconName.TimesCircle" />
+                                @L["PurgeTemporaryFiles"]
+                            </Button>
+                            
+                            <Button Color="Color.Warning" Clicked="ShowBackupDialog">
+                                <Icon Name="IconName.Archive" />
+                                @L["BackupDatabase"]
+                            </Button>
+                            
+                            <Button Color="Color.Danger" Clicked="ShowRestartDialog">
+                                <Icon Name="IconName.Bolt" />
+                                @L["RestartApplication"]
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+        </Content>
+    </Tabs>
+
+    <!-- Modales -->
+    <Modal @ref="testEmailModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["TestEmailSettings"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>@L["TestEmailRecipient"]</FieldLabel>
+                    <TextEdit @bind-Text="@testEmailRecipient" />
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => testEmailModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SendTestEmail">
+                    <Icon Name="IconName.PaperPlane" />
+                    @L["SendTestEmail"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+    
+    <Modal @ref="backupModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["BackupDatabase"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <p>Esta operación realizará una copia de seguridad de la base de datos.</p>
+                    <p>¿Está seguro de que desea continuar?</p>
+                }
+                else
+                {
+                    <p>This operation will create a backup of the database.</p>
+                    <p>Are you sure you want to continue?</p>
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => backupModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Warning" Clicked="BackupDatabase">
+                    <Icon Name="IconName.Archive" />
+                    @L["BackupDatabase"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+    
+    <Modal @ref="restartModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["RestartApplication"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <p><strong>¡Advertencia!</strong> Esta operación reiniciará la aplicación.</p>
+                    <p>Todos los usuarios conectados perderán su conexión.</p>
+                    <p>¿Está seguro de que desea continuar?</p>
+                }
+                else
+                {
+                    <p><strong>Warning!</strong> This operation will restart the application.</p>
+                    <p>All connected users will lose their connection.</p>
+                    <p>Are you sure you want to continue?</p>
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => restartModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Danger" Clicked="RestartApplication">
+                    <Icon Name="IconName.Bolt" />
+                    @L["RestartApplication"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+</div>
+
+@code {
+    private Modal testEmailModal;
+    private Modal backupModal;
+    private Modal restartModal;
+    private string testEmailRecipient = "";
+
+    private AppSettings appSettings = new AppSettings();
+    private PricingSettings pricingSettings = new PricingSettings();
+    private EmailSettings emailSettings = new EmailSettings();
+    private IntegrationSettings integrationSettings = new IntegrationSettings();
+    private SystemInfo systemInfo = new SystemInfo();
+
+    protected override void OnInitialized()
+    {
+        LoadSettings();
+        LoadSystemInfo();
+    }
+
+    private void LoadSettings()
+    {
+        // En una aplicación real, estos valores se cargarían desde la base de datos o archivos de configuración
+        // Aquí solo usamos valores predeterminados como ejemplo
+        
+        appSettings = new AppSettings
+        {
+            ApplicationName = Configuration["App:Name"] ?? "MudanzaApp",
+            BaseUrl = Configuration["App:BaseUrl"] ?? "https://localhost:7001",
+            DefaultLanguage = "en-US",
+            RequireEmailConfirmation = true,
+            AllowRegistration = true,
+            EnableNotifications = true
+        };
+        
+        pricingSettings = new PricingSettings
+        {
+            FreeCreditsForNewUsers = 5,
+            CreditPackages = new List<CreditPackage>
+            {
+                new CreditPackage { Credits = 10, Price = 10, Description = "Basic package", IsMostPopular = false },
+                new CreditPackage { Credits = 50, Price = 45, Description = "Standard package with 10% discount", IsMostPopular = true },
+                new CreditPackage { Credits = 200, Price = 160, Description = "Complete package with 20% discount", IsMostPopular = false }
+            },
+            StripePublicKey = Configuration["Stripe:PublicKey"] ?? "",
+            StripeSecretKey = Configuration["Stripe:SecretKey"] ?? "",
+            StripeWebhookSecret = Configuration["Stripe:WebhookSecret"] ?? ""
+        };
+        
+        emailSettings = new EmailSettings
+        {
+            SmtpServer = Configuration["Email:SmtpServer"] ?? "",
+            SmtpPort = int.TryParse(Configuration["Email:SmtpPort"], out int port) ? port : 587,
+            SmtpUsername = Configuration["Email:Username"] ?? "",
+            SmtpPassword = Configuration["Email:Password"] ?? "",
+            SenderEmail = Configuration["Email:SenderEmail"] ?? "",
+            SenderName = Configuration["Email:SenderName"] ?? "",
+            EnableSsl = true
+        };
+        
+        integrationSettings = new IntegrationSettings
+        {
+            S3BucketName = Configuration["AWS:S3:BucketName"] ?? "",
+            S3Region = Configuration["AWS:S3:Region"] ?? "",
+            S3AccessKey = Configuration["AWS:S3:AccessKey"] ?? "",
+            S3SecretKey = Configuration["AWS:S3:SecretKey"] ?? "",
+            OpenAIApiKey = Configuration["OpenAI:ApiKey"] ?? ""
+        };
+    }
+
+    private void LoadSystemInfo()
+    {
+        systemInfo = new SystemInfo
+        {
+            ApplicationVersion = "1.0.0",
+            DotNetVersion = Environment.Version.ToString(),
+            OperatingSystem = Environment.OSVersion.ToString(),
+            ServerTime = DateTime.Now.ToString(),
+                DatabaseProvider = "PostgreSQL"
+        };
+    }
+
+    private void SaveGeneralSettings()
+    {
+        // En una aplicación real, aquí se guardarían los valores en la base de datos o archivos de configuración
+        ToastService.Success(L["SettingsSavedSuccess"]);
+    }
+
+    private void SavePricingSettings()
+    {
+        // En una aplicación real, aquí se guardarían los valores en la base de datos o archivos de configuración
+        
+        // Asegurarse de que solo un paquete esté marcado como más popular
+        int mostPopularCount = pricingSettings.CreditPackages.Count(p => p.IsMostPopular);
+        if (mostPopularCount > 1)
+        {
+            ToastService.Warning(L["OnlyOneMostPopularPackage"]);
+            return;
+        }
+        
+        ToastService.Success(L["SettingsSavedSuccess"]);
+    }
+
+    private void SaveEmailSettings()
+    {
+        // En una aplicación real, aquí se guardarían los valores en la base de datos o archivos de configuración
+        ToastService.Success(L["SettingsSavedSuccess"]);
+    }
+
+    private void SaveIntegrationSettings()
+    {
+        // En una aplicación real, aquí se guardarían los valores en la base de datos o archivos de configuración
+        ToastService.Success(L["SettingsSavedSuccess"]);
+    }
+
+    private void TestEmailSettings()
+    {
+        testEmailRecipient = "";
+        testEmailModal.Show();
+    }
+
+    private void SendTestEmail()
+    {
+        if (string.IsNullOrWhiteSpace(testEmailRecipient))
+        {
+            ToastService.Warning(L["EmailRequired"]);
+            return;
+        }
+        
+        // En una aplicación real, aquí se enviaría un correo de prueba
+        ToastService.Success(L["TestEmailSent"]);
+        testEmailModal.Hide();
+    }
+
+    private void AddCreditPackage()
+    {
+        pricingSettings.CreditPackages.Add(new CreditPackage
+        {
+            Credits = 10,
+            Price = 10,
+            Description = "New package",
+            IsMostPopular = false
+        });
+    }
+
+    private void RemoveCreditPackage(CreditPackage package)
+    {
+        pricingSettings.CreditPackages.Remove(package);
+    }
+
+    private void PurgeTemporaryFiles()
+    {
+        // En una aplicación real, aquí se eliminarían los archivos temporales
+        ToastService.Success(L["TemporaryFilesPurged"]);
+    }
+
+    private void ShowBackupDialog()
+    {
+        backupModal.Show();
+    }
+
+    private void BackupDatabase()
+    {
+        // En una aplicación real, aquí se realizaría una copia de seguridad de la base de datos
+        ToastService.Success(L["DatabaseBackupSuccess"]);
+        backupModal.Hide();
+    }
+
+    private void ShowRestartDialog()
+    {
+        restartModal.Show();
+    }
+
+    private void RestartApplication()
+    {
+        // En una aplicación real, aquí se reiniciaría la aplicación
+        ToastService.Success(L["ApplicationRestarting"]);
+        restartModal.Hide();
+    }
+
+    // Clases de modelo para la configuración
+    private class AppSettings
+    {
+        public string ApplicationName { get; set; }
+        public string BaseUrl { get; set; }
+        public string DefaultLanguage { get; set; }
+        public bool RequireEmailConfirmation { get; set; }
+        public bool AllowRegistration { get; set; }
+        public bool EnableNotifications { get; set; }
+    }
+
+    private class PricingSettings
+    {
+        public int FreeCreditsForNewUsers { get; set; }
+        public List<CreditPackage> CreditPackages { get; set; } = new List<CreditPackage>();
+        public string StripePublicKey { get; set; }
+        public string StripeSecretKey { get; set; }
+        public string StripeWebhookSecret { get; set; }
+    }
+
+    private class CreditPackage
+    {
+        public int Credits { get; set; }
+        public decimal Price { get; set; }
+        public string Description { get; set; }
+        public bool IsMostPopular { get; set; }
+    }
+
+    private class EmailSettings
+    {
+        public string SmtpServer { get; set; }
+        public int SmtpPort { get; set; }
+        public string SmtpUsername { get; set; }
+        public string SmtpPassword { get; set; }
+        public string SenderEmail { get; set; }
+        public string SenderName { get; set; }
+        public bool EnableSsl { get; set; }
+    }
+
+    private class IntegrationSettings
+    {
+        public string S3BucketName { get; set; }
+        public string S3Region { get; set; }
+        public string S3AccessKey { get; set; }
+        public string S3SecretKey { get; set; }
+        public string OpenAIApiKey { get; set; }
+    }
+
+    private class SystemInfo
+    {
+        public string ApplicationVersion { get; set; }
+        public string DotNetVersion { get; set; }
+        public string OperatingSystem { get; set; }
+        public string ServerTime { get; set; }
+        public string DatabaseProvider { get; set; }
+    }
+}

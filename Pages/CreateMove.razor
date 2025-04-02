@@ -1,0 +1,237 @@
+﻿@* MudanzaApp/Pages/CreateMove.razor *@
+@page "/create-move"
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@attribute [Authorize]
+@inject IMudanzaService MudanzaService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>@L["CreateMove"] - @L["AppName"]</PageTitle>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle Size="4">@L["CreateMove"]</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Steps @bind-SelectedStep="@currentStep">
+                            <Step Name="basic-info">
+                                <Marker>
+                                    <Icon Name="IconName.FileAlt" />
+                                </Marker>
+                                <Caption>@L["BasicInfo"]</Caption>
+                        </Step>
+                    </Steps>
+
+                    <div class="mt-4">
+                        @if (currentStep == "basic-info")
+                        {
+                            <Validations @ref="validations" Model="@newMudanza" ValidateOnLoad="false">
+                                <Field>
+                                    <FieldLabel>@L["MoveName"]</FieldLabel>
+                                        <Validation Validator="@ValidateName">
+                                            <TextEdit @bind-Text="@newMudanza.Name" Placeholder="@L["MoveNamePlaceholder"]">
+                                                <Feedback>
+                                                    <ValidationError>@L["MoveNameRequired"]</ValidationError>
+                                                </Feedback>
+                                            </TextEdit>
+                                        </Validation>
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel>@L["CollaborativeMove"]</FieldLabel>
+                                        <Check TValue="bool" @bind-Checked="@isCollaborative">
+                                            @L["IsCollaborative"]
+                                    </Check>
+                                    <FieldHelp>
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>Seleccione esta opción si desea que otras personas puedan colaborar en esta mudanza.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Select this option if you want other people to be able to collaborate on this move.</span>
+                                        }
+                                    </FieldHelp>
+                                </Field>
+
+                                @if (isCollaborative)
+                                {
+                                    <Field>
+                                        <FieldLabel>@L["CollaboratorName"]</FieldLabel>
+                                            <TextEdit @bind-Text="@newMudanza.CollaboratorName" Placeholder="@L["CollaboratorNamePlaceholder"]" />
+                                            <FieldHelp>
+                                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                            {
+                                                <span>Opcional: nombre para identificar esta colaboración.</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Optional: name to identify this collaboration.</span>
+                                            }
+                                        </FieldHelp>
+                                    </Field>
+                                }
+
+                                <Field>
+                                    <FieldLabel>@L["Origin"]</FieldLabel>
+                                        <Validation Validator="@ValidateOrigin">
+                                            <TextEdit @bind-Text="@newMudanza.OriginLocation" Placeholder="@L["OriginPlaceholder"]">
+                                                <Feedback>
+                                                    <ValidationError>@L["OriginRequired"]</ValidationError>
+                                                </Feedback>
+                                            </TextEdit>
+                                        </Validation>
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel>@L["Destination"]</FieldLabel>
+                                        <Validation Validator="@ValidateDestination">
+                                            <TextEdit @bind-Text="@newMudanza.DestinationLocation" Placeholder="@L["DestinationPlaceholder"]">
+                                                <Feedback>
+                                                    <ValidationError>@L["DestinationRequired"]</ValidationError>
+                                                </Feedback>
+                                            </TextEdit>
+                                        </Validation>
+                                    </Field>
+                                </Validations>
+                        }
+                    </div>
+                </CardBody>
+                <CardFooter>
+                    <div class="d-flex justify-content-between">
+                        <Button Color="Color.Secondary" Clicked="@CancelCreation">
+                            <Icon Name="IconName.Times" />
+                            @L["Cancel"]
+                        </Button>
+                        <Button Color="Color.Primary" Clicked="@CreateMudanzaAsync">
+                            <Icon Name="IconName.Check" />
+                            @L["CreateMove"]
+                        </Button>
+                    </div>
+                </CardFooter>
+            </Card>
+
+            <!-- Consejos útiles -->
+            <Card Class="mt-4">
+                <CardHeader>
+                    <CardTitle Size="5">
+                        <Icon Name="IconName.Lightbulb" />
+                        @L["Tips"]
+                    </CardTitle>
+                </CardHeader>
+                <CardBody>
+                    <ul>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <li>Dé un nombre descriptivo a su mudanza para identificarla fácilmente.</li>
+                            <li>Si varias personas van a agregar artículos, marque la opción de mudanza colaborativa.</li>
+                            <li>Una vez creada, podrá invitar a otros a colaborar compartiendo un enlace.</li>
+                            <li>Después de crear la mudanza, podrá agregar sus artículos y detalles adicionales.</li>
+                        }
+                        else
+                        {
+                            <li>Give your move a descriptive name to easily identify it.</li>
+                            <li>If multiple people will be adding items, check the collaborative move option.</li>
+                            <li>Once created, you can invite others to collaborate by sharing a link.</li>
+                            <li>After creating the move, you'll be able to add your items and additional details.</li>
+                        }
+                    </ul>
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string currentStep = "basic-info";
+    private Data.Models.Mudanza newMudanza = new();
+    private bool isCollaborative = false;
+    private Validations validations;
+    private string userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUserIdAsync();
+    }
+
+    private async Task GetUserIdAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            ToastService.Error(L["UserNotAuthenticated"]);
+            NavigationManager.NavigateTo("/Identity/Account/Login");
+        }
+    }
+
+    private void ValidateName(ValidatorEventArgs e)
+    {
+        var value = Convert.ToString(e.Value);
+        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void ValidateOrigin(ValidatorEventArgs e)
+    {
+        var value = Convert.ToString(e.Value);
+        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void ValidateDestination(ValidatorEventArgs e)
+    {
+        var value = Convert.ToString(e.Value);
+        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
+    }
+
+    private void CancelCreation()
+    {
+        NavigationManager.NavigateTo("/my-moves");
+    }
+
+    private async Task CreateMudanzaAsync()
+    {
+        if (await validations.ValidateAll())
+        {
+            try
+            {
+                newMudanza.UserId = userId;
+                newMudanza.Status = MudanzaStatus.DraftOpen;
+                newMudanza.CreatedAt = DateTime.UtcNow;
+
+                // Si no es colaborativa, asegurarse de que el campo CollaboratorName esté vacío
+                if (!isCollaborative)
+                {
+                    newMudanza.CollaboratorName = null;
+                }
+
+                var result = await MudanzaService.CreateMudanzaAsync(newMudanza);
+
+                if (result != null && result.Id > 0)
+                {
+                    ToastService.Success(L["MoveCreatedSuccess"]);
+                    NavigationManager.NavigateTo($"/mudanza/{result.Id}");
+                }
+                else
+                {
+                    ToastService.Error(L["ErrorCreatingMove"]);
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.Error(L["ErrorCreatingMove"]);
+                Console.Error.WriteLine($"Error creating move: {ex.Message}");
+            }
+        }
+        else
+        {
+            ToastService.Warning(L["PleaseCompleteRequiredFields"]);
+        }
+    }
+}

@@ -1,0 +1,348 @@
+﻿@* MudanzaApp/Pages/MyMoves.razor *@
+@page "/my-moves"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@inject IMudanzaService MudanzaService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>@L["MyMoves"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>@L["MyMoves"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Administre todas sus mudanzas en un solo lugar.</span>
+                }
+                else
+                {
+                    <span>Manage all your moves in one place.</span>
+                }
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                <Icon Name="IconName.PlusCircle" />
+                @L["CreateMove"]
+            </Button>
+        </div>
+    </div>
+
+    <!-- Filter options -->
+    <Card Class="mb-4">
+        <CardBody>
+            <div class="row">
+                <div class="col-md-5">
+                    <Field>
+                        <FieldLabel>@L["FilterByStatus"]</FieldLabel>
+                        <Select TValue="MudanzaStatus?" @bind-SelectedValue="@selectedStatus">
+                            <SelectItem TValue="MudanzaStatus?" Value="@null">@L["AllStatuses"]</SelectItem>
+                            @foreach (MudanzaStatus status in Enum.GetValues(typeof(MudanzaStatus)))
+                            {
+                                <SelectItem TValue="MudanzaStatus?" Value="@status">@L[$"Status_{status}"]</SelectItem>
+                            }
+                        </Select>
+                    </Field>
+                </div>
+                <div class="col-md-5">
+                    <Field>
+                        <FieldLabel>@L["SearchByName"]</FieldLabel>
+                        <TextEdit @bind-Text="@searchTerm" Placeholder="@L["SearchPlaceholder"]" />
+                    </Field>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <Button Color="Color.Primary" Clicked="ApplyFilters" Class="w-100">
+                        <Icon Name="IconName.Search" />
+                        @L["ApplyFilters"]
+                    </Button>
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else if (userMudanzas == null || !userMudanzas.Any())
+    {
+        <Alert Color="Color.Info">
+            <AlertMessage>
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Aún no tiene mudanzas. ¡Cree una nueva mudanza para comenzar!</span>
+                }
+                else
+                {
+                    <span>You don't have any moves yet. Create a new move to get started!</span>
+                }
+            </AlertMessage>
+            <AlertDescription>
+                <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                    <Icon Name="IconName.PlusCircle" />
+                    @L["CreateMove"]
+                </Button>
+            </AlertDescription>
+        </Alert>
+    }
+    else if (filteredMudanzas == null || !filteredMudanzas.Any())
+    {
+        <Alert Color="Color.Info">
+            <AlertMessage>@L["NoMovesMatchFilter"]</AlertMessage>
+            <AlertDescription>
+                <Button Color="Color.Secondary" Clicked="ClearFilters">
+                    <Icon Name="IconName.Times" />
+                    @L["ClearFilters"]
+                </Button>
+            </AlertDescription>
+        </Alert>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var mudanza in filteredMudanzas)
+            {
+                <div class="col-md-6 mb-4">
+                    <Card>
+                        <CardHeader>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <CardTitle>@mudanza.Name</CardTitle>
+                                <Badge Color="@GetStatusBadgeColor(mudanza.Status)">
+                                    @L[$"Status_{mudanza.Status}"]
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                        <CardBody>
+                            <div class="mb-2">
+                                <strong>@L["Origin"]:</strong> @mudanza.OriginLocation
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["Destination"]:</strong> @mudanza.DestinationLocation
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["CreatedAt"]:</strong> @mudanza.CreatedAt.ToLocalTime().ToString("g")
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["Items"]:</strong> @(mudanza.Items?.Count ?? 0)
+                            </div>
+                            @if (mudanza.EstimatedCost.HasValue)
+                            {
+                                <div class="mb-2">
+                                    <strong>@L["EstimatedCost"]:</strong> $@mudanza.EstimatedCost.Value.ToString("N2")
+                                </div>
+                            }
+                            @if (mudanza.Status == MudanzaStatus.DraftOpen || mudanza.Status == MudanzaStatus.DraftClosed)
+                            {
+                                <div class="mt-3">
+                                    <Alert Color="Color.Info" Visible="true">
+                                        <AlertMessage>
+                                            @if (mudanza.Status == MudanzaStatus.DraftOpen)
+                                            {
+                                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                                {
+                                                    <span>Puede seguir editando esta mudanza y agregar artículos.</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>You can continue editing this move and adding items.</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                                {
+                                                    <span>Esta mudanza está lista para ser enviada para revisión.</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>This move is ready to be submitted for review.</span>
+                                                }
+                                            }
+                                        </AlertMessage>
+                                    </Alert>
+                                </div>
+                            }
+                        </CardBody>
+                        <CardFooter>
+                            <div class="d-flex justify-content-between">
+                                <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo($"/mudanza/{mudanza.Id}"))">
+                                    <Icon Name="IconName.Eye" />
+                                    @L["ViewDetails"]
+                                </Button>
+                                
+                                @if (mudanza.Status == MudanzaStatus.DraftClosed)
+                                {
+                                    <Button Color="Color.Success" Clicked="@(() => SubmitForReview(mudanza.Id))">
+                                        <Icon Name="IconName.CheckCircle" />
+                                        @L["SubmitForReview"]
+                                    </Button>
+                                }
+                                else if (mudanza.Status == MudanzaStatus.DraftOpen)
+                                {
+                                    <Button Color="Color.Secondary" Clicked="@(() => CloseDraft(mudanza.Id))">
+                                        <Icon Name="IconName.Lock" />
+                                        @L["FinalizeDraft"]
+                                    </Button>
+                                }
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private IEnumerable<Data.Models.Mudanza> userMudanzas;
+    private IEnumerable<Data.Models.Mudanza> filteredMudanzas;
+    private MudanzaStatus? selectedStatus = null;
+    private string searchTerm = "";
+    private string userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUserIdAsync();
+        await LoadUserMudanzasAsync();
+    }
+
+    private async Task GetUserIdAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            ToastService.Error(L["UserNotAuthenticated"]);
+            NavigationManager.NavigateTo("/Identity/Account/Login");
+        }
+    }
+
+    private async Task LoadUserMudanzasAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            if (string.IsNullOrEmpty(userId))
+                return;
+                
+            // Cargar las mudanzas del usuario
+            userMudanzas = await MudanzaService.GetUserMudanzasAsync(userId);
+            
+            // Aplicar filtros si existen
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingMoves"]);
+            Console.Error.WriteLine($"Error loading mudanzas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        filteredMudanzas = userMudanzas;
+        
+        // Filtrar por estado
+        if (selectedStatus.HasValue)
+        {
+            filteredMudanzas = filteredMudanzas.Where(m => m.Status == selectedStatus.Value);
+        }
+        
+        // Filtrar por término de búsqueda
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filteredMudanzas = filteredMudanzas.Where(m => 
+                m.Name.ToLower().Contains(term) || 
+                m.OriginLocation.ToLower().Contains(term) || 
+                m.DestinationLocation.ToLower().Contains(term));
+        }
+    }
+
+    private void ClearFilters()
+    {
+        selectedStatus = null;
+        searchTerm = "";
+        filteredMudanzas = userMudanzas;
+    }
+
+    private async Task CloseDraft(int mudanzaId)
+    {
+        try
+        {
+            var result = await MudanzaService.ChangeStatusAsync(mudanzaId, MudanzaStatus.DraftClosed, userId);
+            
+            if (result)
+            {
+                ToastService.Success(L["DraftClosedSuccess"]);
+                await LoadUserMudanzasAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorClosingDraft"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorClosingDraft"]);
+            Console.Error.WriteLine($"Error closing draft: {ex.Message}");
+        }
+    }
+
+    private async Task SubmitForReview(int mudanzaId)
+    {
+        try
+        {
+            var result = await MudanzaService.SubmitForReviewAsync(mudanzaId, userId);
+            
+            if (result)
+            {
+                ToastService.Success(L["MoveSubmittedSuccess"]);
+                await LoadUserMudanzasAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorSubmittingMove"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorSubmittingMove"]);
+            Console.Error.WriteLine($"Error submitting move for review: {ex.Message}");
+        }
+    }
+
+    private static Color GetStatusBadgeColor(MudanzaStatus status)
+    {
+        return status switch
+        {
+            MudanzaStatus.DraftOpen => Color.Light,
+            MudanzaStatus.DraftClosed => Color.Secondary,
+            MudanzaStatus.InReview => Color.Info,
+            MudanzaStatus.WaitingForDocuments => Color.Warning,
+            MudanzaStatus.ReceivedInWarehouseUS => Color.Primary,
+            MudanzaStatus.ReceivedInWarehouseMX => Color.Primary,
+            MudanzaStatus.WaitingForCrossing => Color.Warning,
+            MudanzaStatus.WaitingForShipment => Color.Warning,
+            MudanzaStatus.InTransit => Color.Info,
+            MudanzaStatus.Delivered => Color.Success,
+            MudanzaStatus.Completed => Color.Success,
+            _ => Color.Light
+        };
+    }
+}

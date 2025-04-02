@@ -1,0 +1,12 @@
+﻿@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Obtener solo la ruta relativa, no la URL completa
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+
+        // Navegar a la página de login con la ruta relativa como returnUrl
+        Navigation.NavigateTo($"/Identity/Account/Login?returnUrl=/{currentPath}", forceLoad: true);
+    }
+}

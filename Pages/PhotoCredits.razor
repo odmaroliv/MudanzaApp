@@ -1,0 +1,341 @@
+﻿@using Blazorise
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@page "/photo-credits"
+@attribute [Authorize]
+@inject IPhotoCreditService PhotoCreditService
+@inject IStripeService StripeService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JSRuntime
+
+<PageTitle>@L["PhotoCredits"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>@L["PhotoCredits"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Compre créditos para usar nuestra función de análisis de fotos con IA.</span>
+                }
+                else
+                {
+                    <span>Purchase credits to use our AI photo analysis feature.</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div class="row mb-5">
+            <div class="col-md-6 offset-md-3">
+                <Card Background="Background.Light">
+                    <CardBody>
+                        <div class="text-center">
+                            <h3>@L["AvailableCredits"]</h3>
+                            <div class="display-1 mb-3">@availableCredits</div>
+                            
+                            @if (availableCredits == 0)
+                            {
+                                <Alert Color="Color.Warning">
+                                    <AlertMessage>
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>Se han agotado los créditos. Compre más para continuar usando la función de análisis de fotos.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>You've run out of credits. Purchase more to continue using the photo analysis feature.</span>
+                                        }
+                                    </AlertMessage>
+                                </Alert>
+                            }
+                            else if (availableCredits <= 5)
+                            {
+                                <Alert Color="Color.Info">
+                                    <AlertMessage>
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>Sus créditos se están agotando. Considere comprar más pronto.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Your credits are running low. Consider purchasing more soon.</span>
+                                        }
+                                    </AlertMessage>
+                                </Alert>
+                            }
+                            
+                            <p class="text-muted mt-3">
+                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                {
+                                    <span>Los créditos se utilizan cuando analiza fotos para identificar artículos en su mudanza.</span>
+                                }
+                                else
+                                {
+                                    <span>Credits are used when you analyze photos to identify items in your move.</span>
+                                }
+                            </p>
+                        </div>
+                    </CardBody>
+                </Card>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <h2 class="text-center mb-4">@L["PhotoCreditPackages"]</h2>
+            </div>
+        </div>
+
+        <div class="row">
+            @if (creditPackages == null || !creditPackages.Any())
+            {
+                <div class="col">
+                    <Alert Color="Color.Info">
+                        <AlertMessage>@L["ErrorLoadingPackages"]</AlertMessage>
+                    </Alert>
+                </div>
+            }
+            else
+            {
+                @foreach (var package in creditPackages)
+                {
+                    <div class="col-md-4 mb-4">
+                        <Card>
+                            @if (package.IsMostPopular)
+                            {
+                                <CardHeader Background="Background.Primary" TextColor="TextColor.White">
+                                    <div class="text-center">
+                                        <strong>@L["MostPopular"]</strong>
+                                    </div>
+                                </CardHeader>
+                            }
+                            <CardBody>
+                                <div class="text-center">
+                                    <h3>@package.Credits @L["Credits"]</h3>
+                                    <div class="display-4 mb-3">$@package.Price.ToString("N2")</div>
+                                    <p>@package.Description</p>
+                                    
+                                    <Button Color="Color.Primary" 
+                                            Block 
+                                            Size="Size.Large" 
+                                            Clicked="@(() => PurchasePackage(package))"
+                                            Disabled="@isProcessingPayment">
+                                        <Icon Name="IconName.ShoppingCart" />
+                                        @L["BuyCredits"]
+                                    </Button>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8 offset-md-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>@L["PhotoCreditsFAQ"]</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Accordion>
+                            <Collapse Visible>
+                                <CollapseHeader>
+                                    <Heading Size="HeadingSize.Is5">
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>¿Qué son los créditos de fotos?</span>
+                                        }
+                                        else
+                                        {
+                                            <span>What are photo credits?</span>
+                                        }
+                                    </Heading>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <p>Los créditos de fotos le permiten utilizar nuestra función de análisis de fotos con IA. Cada vez que analiza una foto para identificar un artículo, se utiliza un crédito.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>Photo credits allow you to use our AI photo analysis feature. Each time you analyze a photo to identify an item, one credit is used.</p>
+                                    }
+                                </CollapseBody>
+                            </Collapse>
+                            <Collapse>
+                                <CollapseHeader>
+                                    <Heading Size="HeadingSize.Is5">
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>¿Cómo funciona el análisis de fotos?</span>
+                                        }
+                                        else
+                                        {
+                                            <span>How does photo analysis work?</span>
+                                        }
+                                    </Heading>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <p>Nuestra tecnología de IA analiza su foto y identifica automáticamente el artículo en la imagen. Proporciona un nombre, descripción, categoría y cantidad estimada. Usted solo necesita completar detalles adicionales como el peso, valor y dimensiones.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>Our AI technology analyzes your photo and automatically identifies the item in the image. It provides a name, description, category, and estimated quantity. You just need to fill in additional details like weight, value, and dimensions.</p>
+                                    }
+                                </CollapseBody>
+                            </Collapse>
+                            <Collapse>
+                                <CollapseHeader>
+                                    <Heading Size="HeadingSize.Is5">
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>¿Caducan los créditos?</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Do credits expire?</span>
+                                        }
+                                    </Heading>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <p>No, los créditos de fotos no caducan y se mantienen en su cuenta hasta que los utilice.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>No, photo credits do not expire and remain in your account until you use them.</p>
+                                    }
+                                </CollapseBody>
+                            </Collapse>
+                            <Collapse>
+                                <CollapseHeader>
+                                    <Heading Size="HeadingSize.Is5">
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>¿Cómo se procesa el pago?</span>
+                                        }
+                                        else
+                                        {
+                                            <span>How is payment processed?</span>
+                                        }
+                                    </Heading>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <p>Todos los pagos se procesan de forma segura a través de Stripe. No almacenamos su información de tarjeta de crédito.</p>
+                                    }
+                                    else
+                                    {
+                                        <p>All payments are securely processed through Stripe. We do not store your credit card information.</p>
+                                    }
+                                </CollapseBody>
+                            </Collapse>
+                        </Accordion>
+                    </CardBody>
+                </Card>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int availableCredits = 0;
+    private bool isLoading = true;
+    private bool isProcessingPayment = false;
+    private string userId;
+    private PhotoCreditPackage[] creditPackages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUserIdAsync();
+        await LoadCreditsAndPackagesAsync();
+    }
+
+    private async Task GetUserIdAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            ToastService.Error(L["UserNotAuthenticated"]);
+            NavigationManager.NavigateTo("/Identity/Account/Login");
+        }
+    }
+
+    private async Task LoadCreditsAndPackagesAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Cargar créditos disponibles
+            availableCredits = await PhotoCreditService.GetAvailableCreditsAsync(userId);
+            
+            // Cargar paquetes de créditos
+            creditPackages = await StripeService.GetPhotoCreditPackagesAsync();
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingCredits"]);
+            Console.Error.WriteLine($"Error loading credits: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task PurchasePackage(PhotoCreditPackage package)
+    {
+        if (isProcessingPayment)
+            return;
+            
+        try
+        {
+            isProcessingPayment = true;
+            
+            // Crear sesión de checkout en Stripe
+            var checkoutUrl = await StripeService.CreateCheckoutSessionAsync(
+                userId,
+                package.Credits,
+                package.Price);
+                
+            if (string.IsNullOrEmpty(checkoutUrl))
+            {
+                ToastService.Error(L["ErrorCreatingCheckout"]);
+                return;
+            }
+            
+            // Redirigir al usuario a la página de checkout de Stripe
+            NavigationManager.NavigateTo(checkoutUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorProcessingPayment"]);
+            Console.Error.WriteLine($"Error processing payment: {ex.Message}");
+        }
+        finally
+        {
+            isProcessingPayment = false;
+        }
+    }
+}

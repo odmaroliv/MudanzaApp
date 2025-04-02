@@ -1,0 +1,1128 @@
+﻿@using System.Security.Claims
+@using Blazorise
+@using Microsoft.AspNetCore.Components.Authorization
+@page "/admin/mudanza/{Id:int}"
+@attribute [Authorize(Roles = "Admin")]
+@inject IMudanzaService MudanzaService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject IEmailService EmailService
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+<PageTitle>@(mudanza?.Name ?? L["MoveAdministration"]) - @L["AppName"]</PageTitle>
+
+@if (isLoading)
+{
+    <div class="container mt-5">
+        <div class="d-flex justify-content-center">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    </div>
+}
+else if (mudanza == null)
+{
+    <div class="container mt-5">
+        <Alert Color="Color.Danger">
+            <AlertMessage>@L["MoveNotFound"]</AlertMessage>
+            <AlertDescription>
+                <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/admin/dashboard"))">
+                    <Icon Name="IconName.ArrowLeft" />
+                    @L["BackToAdminDashboard"]
+                </Button>
+            </AlertDescription>
+        </Alert>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h1>@mudanza.Name</h1>
+                <div class="d-flex align-items-center">
+                    <Badge Color="@GetStatusBadgeColor(mudanza.Status)" Size="Size.Large">
+                        @L[$"Status_{mudanza.Status}"]
+                    </Badge>
+                    <Button Color="Color.Primary" Size="Size.Small" Class="ms-3" Clicked="ShowChangeStatusModal">
+                        <Icon Name="IconName.MoneyBillAlt" />
+                        @L["ChangeStatus"]
+                    </Button>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <Button Color="Color.Secondary" Clicked="@(() => NavigationManager.NavigateTo("/admin/dashboard"))">
+                    <Icon Name="IconName.ArrowLeft" />
+                    @L["BackToAdminDashboard"]
+                </Button>
+            </div>
+        </div>
+
+        <Tabs>
+            <Items>
+                <Tab Name="overview">
+                    <Icon Name="IconName.InfoCircle" />
+                    @L["Overview"]
+                </Tab>
+                <Tab Name="items">
+                    <Icon Name="IconName.BorderAll" />
+                    @L["Items"] (@(mudanza.Items?.Count ?? 0))
+                </Tab>
+                <Tab Name="customer">
+                    <Icon Name="IconName.User" />
+                    @L["CustomerInfo"]
+                </Tab>
+                <Tab Name="comments">
+                    <Icon Name="IconName.Comments" />
+                    @L["Comments"] (@(mudanza.Comments?.Count ?? 0))
+                </Tab>
+                <Tab Name="pricing">
+                    <Icon Name="IconName.DollarSign" />
+                    @L["PricingAndPayment"]
+                </Tab>
+            </Items>
+            <Content>
+                <TabPanel Name="overview">
+                    <Card>
+                        <CardBody>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["BasicInfo"]</h4>
+                                    <div class="mb-2">
+                                        <strong>@L["Origin"]:</strong> @mudanza.OriginLocation
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>@L["Destination"]:</strong> @mudanza.DestinationLocation
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>@L["CreatedAt"]:</strong> @mudanza.CreatedAt.ToLocalTime().ToString("g")
+                                    </div>
+                                    @if (mudanza.SubmittedAt.HasValue)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@L["SubmittedAt"]:</strong> @mudanza.SubmittedAt.Value.ToLocalTime().ToString("g")
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["Statistics"]</h4>
+                                    <div class="mb-2">
+                                        <strong>@L["TotalItems"]:</strong> @(mudanza.Items?.Count ?? 0)
+                                    </div>
+                                    @if (mudanza.Items?.Any() == true)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@L["TotalWeight"]:</strong> @CalculateTotalWeight() @L["Pounds"]
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["TotalDeclaredValue"]:</strong> $@CalculateTotalValue().ToString("N2")
+                                        </div>
+                                    }
+                                    @if (mudanza.EstimatedCost.HasValue)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@L["EstimatedCost"]:</strong> $@mudanza.EstimatedCost.Value.ToString("N2")
+                                        </div>
+                                    }
+                                    @if (mudanza.FinalCost.HasValue)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@L["FinalCost"]:</strong> $@mudanza.FinalCost.Value.ToString("N2")
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Status History -->
+                            @if (mudanza.StatusHistory?.Any() == true)
+                            {
+                                <h4 class="mt-4 mb-3">@L["StatusHistory"]</h4>
+                                <div class="table-responsive">
+                                    <Table Striped Hoverable Bordered>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHeaderCell>@L["Date"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Status"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Comments"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["ChangedBy"]</TableHeaderCell>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            @foreach (var statusChange in mudanza.StatusHistory.OrderByDescending(h => h.ChangedAt))
+                                            {
+                                                <TableRow>
+                                                    <TableRowCell>@statusChange.ChangedAt.ToLocalTime().ToString("g")</TableRowCell>
+                                                    <TableRowCell>
+                                                        <Badge Color="@GetStatusBadgeColor(statusChange.Status)">
+                                                            @L[$"Status_{statusChange.Status}"]
+                                                        </Badge>
+                                                    </TableRowCell>
+                                                    <TableRowCell>@statusChange.Comments</TableRowCell>
+                                                    <TableRowCell>@statusChange.ChangedByUser?.UserName</TableRowCell>
+                                                </TableRow>
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            }
+
+                            <!-- Collaborators -->
+                            @if (mudanza.Collaborators?.Any() == true)
+                            {
+                                <h4 class="mt-4 mb-3">@L["Collaborators"]</h4>
+                                <div class="table-responsive">
+                                    <Table Striped Hoverable Bordered>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHeaderCell>@L["Name"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Email"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["LastAccess"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["ItemsAdded"]</TableHeaderCell>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            @foreach (var collaborator in mudanza.Collaborators)
+                                            {
+                                                <TableRow>
+                                                    <TableRowCell>@collaborator.CollaboratorName</TableRowCell>
+                                                    <TableRowCell>@collaborator.Email</TableRowCell>
+                                                    <TableRowCell>@(collaborator.LastAccess?.ToLocalTime().ToString("g") ?? "-")</TableRowCell>
+                                                    <TableRowCell>@GetItemsAddedByCollaborator(collaborator)</TableRowCell>
+                                                </TableRow>
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            }
+                        </CardBody>
+                    </Card>
+                </TabPanel>
+
+                <TabPanel Name="items">
+                    <Card>
+                        <CardBody>
+                            @if (mudanza.Items == null || !mudanza.Items.Any())
+                            {
+                                <Alert Color="Color.Info">
+                                    <AlertMessage>
+                                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                        {
+                                            <span>Aún no hay artículos en esta mudanza.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>There are no items in this move yet.</span>
+                                        }
+                                    </AlertMessage>
+                                </Alert>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <Table Striped Hoverable Bordered>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHeaderCell>@L["ItemName"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Category"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Quantity"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Weight"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["DeclaredValue"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["IsNew"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["IsHazmat"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["AddedBy"]</TableHeaderCell>
+                                                <TableHeaderCell>@L["Actions"]</TableHeaderCell>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            @foreach (var item in mudanza.Items)
+                                            {
+                                                <TableRow>
+                                                    <TableRowCell>@(mudanza.Items.ToList().IndexOf(item) + 1)</TableRowCell>
+                                                    <TableRowCell>
+                                                        <div>
+                                                            <strong>@item.Name</strong>
+                                                            @if (!string.IsNullOrEmpty(item.PhotoUrl))
+                                                            {
+                                                                <a href="javascript:void(0)" @onclick="@(() => ShowItemPhoto(item))">
+                                                                    <Icon Name="IconName.Image" />
+                                                                </a>
+                                                            }
+                                                        </div>
+                                                        @if (!string.IsNullOrEmpty(item.Description))
+                                                        {
+                                                            <small class="text-muted">@item.Description</small>
+                                                        }
+                                                    </TableRowCell>
+                                                    <TableRowCell>@item.Category</TableRowCell>
+                                                    <TableRowCell>@item.Quantity</TableRowCell>
+                                                    <TableRowCell>
+                                                        @item.Weight @L["Pounds"]
+                                                        @if (item.IsWeightTotal)
+                                                        {
+                                                            <Badge Color="Color.Info" Size="Size.Small">@L["Total"]</Badge>
+                                                        }
+                                                    </TableRowCell>
+                                                    <TableRowCell>
+                                                        $@item.DeclaredValue.ToString("N2")
+                                                        @if (item.IsValueTotal)
+                                                        {
+                                                            <Badge Color="Color.Info" Size="Size.Small">@L["Total"]</Badge>
+                                                        }
+                                                    </TableRowCell>
+                                                    <TableRowCell>
+                                                        @if (item.IsNew)
+                                                        {
+                                                            <Badge Color="Color.Success">@L["Yes"]</Badge>
+                                                        }
+                                                        else
+                                                        {
+                                                            <Badge Color="Color.Secondary">@L["No"]</Badge>
+                                                        }
+                                                    </TableRowCell>
+                                                    <TableRowCell>
+                                                        @if (item.IsHazmat)
+                                                        {
+                                                            <Badge Color="Color.Warning">@L["Yes"]</Badge>
+                                                        }
+                                                        else
+                                                        {
+                                                            <Badge Color="Color.Secondary">@L["No"]</Badge>
+                                                        }
+                                                    </TableRowCell>
+                                                    <TableRowCell>@item.CreatedBy</TableRowCell>
+                                                    <TableRowCell>
+                                                        <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => ShowItemDetails(item))">
+                                                            <Icon Name="IconName.Eye" />
+                                                        </Button>
+                                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => DeleteItem(item))">
+                                                            <Icon Name="IconName.Times" />
+                                                        </Button>
+                                                    </TableRowCell>
+                                                </TableRow>
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            }
+                        </CardBody>
+                    </Card>
+                </TabPanel>
+
+                <TabPanel Name="customer">
+                    <Card>
+                        <CardBody>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["CustomerInformation"]</h4>
+                                    <div class="mb-2">
+                                        <strong>@L["Name"]:</strong> @mudanza.User?.FirstName @mudanza.User?.LastName
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>@L["Email"]:</strong> @mudanza.User?.Email
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>@L["Phone"]:</strong> @(string.IsNullOrEmpty(mudanza.User?.PhoneNumber) ? "-" : mudanza.User?.PhoneNumber)
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>@L["WhatsApp"]:</strong> @(string.IsNullOrEmpty(mudanza.User?.WhatsAppNumber) ? "-" : mudanza.User?.WhatsAppNumber)
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["AdditionalContacts"]</h4>
+                                    @if (!string.IsNullOrEmpty(mudanza.AlternateContact1Name))
+                                    {
+                                        <div class="mb-3">
+                                            <strong>@L["AlternateContact1"]:</strong> @mudanza.AlternateContact1Name<br />
+                                            <strong>@L["Phone"]:</strong> @(string.IsNullOrEmpty(mudanza.AlternateContact1Phone) ? "-" : mudanza.AlternateContact1Phone)<br />
+                                            <strong>@L["Email"]:</strong> @(string.IsNullOrEmpty(mudanza.AlternateContact1Email) ? "-" : mudanza.AlternateContact1Email)
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(mudanza.AlternateContact2Name))
+                                    {
+                                        <div class="mb-3">
+                                            <strong>@L["AlternateContact2"]:</strong> @mudanza.AlternateContact2Name<br />
+                                            <strong>@L["Phone"]:</strong> @(string.IsNullOrEmpty(mudanza.AlternateContact2Phone) ? "-" : mudanza.AlternateContact2Phone)<br />
+                                            <strong>@L["Email"]:</strong> @(string.IsNullOrEmpty(mudanza.AlternateContact2Email) ? "-" : mudanza.AlternateContact2Email)
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <hr class="my-4" />
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["OriginDetails"]</h4>
+                                    <div class="mb-2">
+                                        <strong>@L["Location"]:</strong> @mudanza.OriginLocation
+                                    </div>
+                                    @if (mudanza.NeedsPickup)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@L["NeedsPickup"]:</strong> <Badge Color="Color.Success">@L["Yes"]</Badge>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["BuildingType"]:</strong> @(mudanza.OriginBuildingType.HasValue ? L[$"BuildingType_{mudanza.OriginBuildingType}"] : "-")
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["HasStairs"]:</strong> @(mudanza.HasStairs == true ? L["Yes"] : L["No"])
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["NeedsCrane"]:</strong> @(mudanza.NeedsCrane == true ? L["Yes"] : L["No"])
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["DirtRoad"]:</strong> @(mudanza.DirtRoad == true ? L["Yes"] : L["No"])
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["AccessCode"]:</strong> @(string.IsNullOrEmpty(mudanza.AccessCode) ? "-" : mudanza.AccessCode)
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>@L["VehicleRestrictions"]:</strong> @(string.IsNullOrEmpty(mudanza.VehicleRestrictions) ? "-" : mudanza.VehicleRestrictions)
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["DestinationDetails"]</h4>
+                                    <div class="mb-2">
+                                        <strong>@L["Location"]:</strong> @mudanza.DestinationLocation
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <Button Color="Color.Primary" Clicked="@(() => SendEmailToCustomer())">
+                                    <Icon Name="IconName.Mail" />
+                                    @L["ContactCustomer"]
+                                </Button>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </TabPanel>
+
+                <TabPanel Name="comments">
+                    <Card>
+                        <CardBody>
+                            <div class="comments-container">
+                                @if (mudanza.Comments == null || !mudanza.Comments.Any())
+                                {
+                                    <Alert Color="Color.Info">
+                                        <AlertMessage>
+                                            @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                            {
+                                                <span>Aún no hay comentarios en esta mudanza.</span>
+                                            }
+                                            else
+                                            {
+                                                <span>There are no comments on this move yet.</span>
+                                            }
+                                        </AlertMessage>
+                                    </Alert>
+                                }
+                                else
+                                {
+                                    @foreach (var comment in mudanza.Comments.OrderByDescending(c => c.CreatedAt))
+                                    {
+                                        <div class="comment @(comment.IsAdminComment ? "admin-comment" : "user-comment") mb-3">
+                                            <Card>
+                                                <CardHeader>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            @if (comment.IsAdminComment)
+                                                            {
+                                                                <Badge Color="Color.Primary">@L["Admin"]</Badge>
+                                                            }
+                                                            <span class="ms-2">@comment.User?.UserName</span>
+                                                        </div>
+                                                        <small class="text-muted">@comment.CreatedAt.ToLocalTime().ToString("g")</small>
+                                                    </div>
+                                                </CardHeader>
+                                                <CardBody>
+                                                    <p>@comment.Content</p>
+                                                </CardBody>
+                                            </Card>
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                            <div class="mt-4">
+                                <Field>
+                                    <FieldLabel>@L["AddComment"]</FieldLabel>
+                                    <MemoEdit @bind-Text="@newComment" Rows="4" Placeholder="@L["CommentPlaceholder"]" />
+                                </Field>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <Button Color="Color.Primary" Clicked="@AddAdminComment">
+                                        <Icon Name="IconName.PaperPlane" />
+                                        @L["SendComment"]
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </TabPanel>
+
+                <TabPanel Name="pricing">
+                    <Card>
+                        <CardBody>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["EstimatedCost"]</h4>
+                                    
+                                    <Field>
+                                        <FieldLabel>@L["EstimatedCost"]</FieldLabel>
+                                        <NumericEdit TValue="decimal" @bind-Value="@estimatedCost" Min="0">
+                                            <Prepend>
+                                                <Button>$</Button>
+                                            </Prepend>
+                                        </NumericEdit>
+                                    </Field>
+                                    
+                                    <Button Color="Color.Primary" Class="mt-3" Clicked="UpdateEstimatedCost">
+                                        <Icon Name="IconName.Save" />
+                                        @L["UpdateEstimatedCost"]
+                                    </Button>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["FinalCost"]</h4>
+                                    
+                                    <Field>
+                                        <FieldLabel>@L["FinalCost"]</FieldLabel>
+                                        <NumericEdit TValue="decimal" @bind-Value="@finalCost" Min="0">
+                                            <Prepend>
+                                                <Button>$</Button>
+                                            </Prepend>
+                                        </NumericEdit>
+                                    </Field>
+                                    
+                                    <Button Color="Color.Primary" Class="mt-3" Clicked="UpdateFinalCost">
+                                        <Icon Name="IconName.Save" />
+                                        @L["UpdateFinalCost"]
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4" />
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["PaymentStatus"]</h4>
+                                    
+                                    <Field>
+                                        <FieldLabel>@L["PaymentStatus"]</FieldLabel>
+                                        <Select TValue="string" @bind-SelectedValue="@paymentStatus">
+                                            <SelectItem Value="@("")">@L["Pending"]</SelectItem>
+                                            <SelectItem Value="@("Deposit Received")">@L["DepositReceived"]</SelectItem>
+                                            <SelectItem Value="@("Partially Paid")">@L["PartiallyPaid"]</SelectItem>
+                                            <SelectItem Value="@("Fully Paid")">@L["FullyPaid"]</SelectItem>
+                                        </Select>
+                                    </Field>
+                                    
+                                    <Button Color="Color.Primary" Class="mt-3" Clicked="UpdatePaymentStatus">
+                                        <Icon Name="IconName.Save" />
+                                        @L["UpdatePaymentStatus"]
+                                    </Button>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">@L["QuickActions"]</h4>
+                                    
+                                    <Button Color="Color.Primary" Class="mb-2 w-100" Clicked="SendInvoice">
+                                        <Icon Name="IconName.FileAlt" />
+                                        @L["SendInvoice"]
+                                    </Button>
+                                    
+                                    <Button Color="Color.Secondary" Class="mb-2 w-100" Clicked="SendPaymentReminder">
+                                        <Icon Name="IconName.Bell" />
+                                        @L["SendPaymentReminder"]
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardBody>
+                    </Card>
+                </TabPanel>
+            </Content>
+        </Tabs>
+    </div>
+
+    <!-- Modales -->
+    <Modal @ref="photoModal">
+        <ModalContent Size="ModalSize.Large" Centered>
+            <ModalHeader>
+                <ModalTitle>@(selectedItem?.Name ?? L["ItemPhoto"])</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <div class="text-center">
+                    @if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.PhotoUrl))
+                    {
+                        <img src="@selectedItem.PhotoUrl" class="img-fluid" alt="@selectedItem.Name" />
+                    }
+                </div>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => photoModal.Hide())">
+                    @L["Close"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="confirmDeleteModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["ConfirmDelete"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (selectedItem != null)
+                {
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <p>¿Está seguro de que desea eliminar el artículo <strong>@selectedItem.Name</strong>?</p>
+                    }
+                    else
+                    {
+                        <p>Are you sure you want to delete the item <strong>@selectedItem.Name</strong>?</p>
+                    }
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => confirmDeleteModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Danger" Clicked="ConfirmDelete">
+                    @L["Delete"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="statusModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["ChangeStatus"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>@L["NewStatus"]</FieldLabel>
+                    <Select TValue="MudanzaStatus" @bind-SelectedValue="@newStatus">
+                        @foreach (MudanzaStatus status in Enum.GetValues(typeof(MudanzaStatus)))
+                        {
+                            <SelectItem Value="@status">@L[$"Status_{status}"]</SelectItem>
+                        }
+                    </Select>
+                </Field>
+                
+                <Field>
+                    <FieldLabel>@L["Comments"]</FieldLabel>
+                    <MemoEdit @bind-Text="@statusChangeComments" Rows="3" Placeholder="@L["OptionalComments"]" />
+                </Field>
+                
+                <Field>
+                    <Check TValue="bool" @bind-Checked="@notifyCustomer">
+                        @L["NotifyCustomer"]
+                    </Check>
+                    <FieldHelp>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Se enviará un correo electrónico al cliente notificando el cambio de estado.</span>
+                        }
+                        else
+                        {
+                            <span>An email will be sent to the customer notifying the status change.</span>
+                        }
+                    </FieldHelp>
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => statusModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="ChangeStatus">
+                    @L["ChangeStatus"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="itemDetailsModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@(selectedItem?.Name ?? L["ItemDetails"])</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (selectedItem != null)
+                {
+                    <div class="mb-3">
+                        @if (!string.IsNullOrEmpty(selectedItem.PhotoUrl))
+                        {
+                            <div class="text-center mb-3">
+                                <img src="@selectedItem.PhotoUrl" class="img-fluid" style="max-height: 200px;" alt="@selectedItem.Name" />
+                            </div>
+                        }
+                        
+                        <div class="mb-2">
+                            <strong>@L["Category"]:</strong> @selectedItem.Category
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["Quantity"]:</strong> @selectedItem.Quantity
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["Weight"]:</strong> @selectedItem.Weight @L["Pounds"]
+                            @if (selectedItem.IsWeightTotal)
+                            {
+                                <Badge Color="Color.Info" Size="Size.Small">@L["Total"]</Badge>
+                            }
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["DeclaredValue"]:</strong> $@selectedItem.DeclaredValue.ToString("N2")
+                            @if (selectedItem.IsValueTotal)
+                            {
+                                <Badge Color="Color.Info" Size="Size.Small">@L["Total"]</Badge>
+                            }
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["IsNew"]:</strong> @(selectedItem.IsNew ? L["Yes"] : L["No"])
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["IsHazmat"]:</strong> @(selectedItem.IsHazmat ? L["Yes"] : L["No"])
+                        </div>
+                        
+                        @if (selectedItem.Length.HasValue || selectedItem.Width.HasValue || selectedItem.Height.HasValue)
+                        {
+                            <div class="mb-2">
+                                <strong>@L["Dimensions"]:</strong> 
+                                @(selectedItem.Length?.ToString("N1") ?? "-") x 
+                                @(selectedItem.Width?.ToString("N1") ?? "-") x 
+                                @(selectedItem.Height?.ToString("N1") ?? "-") @L["Inches"]
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(selectedItem.Description))
+                        {
+                            <div class="mb-2">
+                                <strong>@L["Description"]:</strong> @selectedItem.Description
+                            </div>
+                        }
+                        
+                        <div class="mb-2">
+                            <strong>@L["AddedBy"]:</strong> @selectedItem.CreatedBy
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>@L["AddedAt"]:</strong> @selectedItem.CreatedAt.ToLocalTime().ToString("g")
+                        </div>
+                    </div>
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => itemDetailsModal.Hide())">
+                    @L["Close"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+}
+
+<style>
+    .admin-comment .card {
+        border-left: 4px solid var(--bs-primary);
+    }
+    
+    .user-comment .card {
+        border-left: 4px solid var(--bs-secondary);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private Mudanza mudanza;
+    private bool isLoading = true;
+    private MudanzaItem selectedItem;
+    private string newComment = "";
+    private string statusChangeComments = "";
+    private bool notifyCustomer = true;
+    private MudanzaStatus newStatus;
+    private decimal estimatedCost = 0;
+    private decimal finalCost = 0;
+    private string paymentStatus = "";
+
+    // Modales
+    private Modal photoModal;
+    private Modal confirmDeleteModal;
+    private Modal statusModal;
+    private Modal itemDetailsModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Id))
+        {
+            NavigationManager.NavigateTo("/admin/dashboard");
+            return;
+        }
+        
+        await LoadMudanzaAsync();
+    }
+
+    private async Task LoadMudanzaAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            if (!int.TryParse(Id, out int mudanzaId))
+            {
+                ToastService.Error(L["InvalidMoveId"]);
+                NavigationManager.NavigateTo("/admin/dashboard");
+                return;
+            }
+            
+            mudanza = await MudanzaService.GetMudanzaByIdAsync(mudanzaId);
+            
+            if (mudanza == null)
+            {
+                ToastService.Error(L["MoveNotFound"]);
+                return;
+            }
+            
+            // Inicializar valores
+            newStatus = mudanza.Status;
+            estimatedCost = mudanza.EstimatedCost ?? 0;
+            finalCost = mudanza.FinalCost ?? 0;
+            paymentStatus = mudanza.PaymentStatus ?? "";
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingMove"]);
+            Console.Error.WriteLine($"Error loading move: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private double CalculateTotalWeight()
+    {
+        if (mudanza?.Items == null || !mudanza.Items.Any())
+            return 0;
+            
+        double total = 0;
+        
+        foreach (var item in mudanza.Items)
+        {
+            if (item.IsWeightTotal)
+            {
+                total += item.Weight;
+            }
+            else
+            {
+                total += item.Weight * item.Quantity;
+            }
+        }
+        
+        return Math.Round(total, 2);
+    }
+
+    private decimal CalculateTotalValue()
+    {
+        if (mudanza?.Items == null || !mudanza.Items.Any())
+            return 0;
+            
+        decimal total = 0;
+        
+        foreach (var item in mudanza.Items)
+        {
+            if (item.IsValueTotal)
+            {
+                total += item.DeclaredValue;
+            }
+            else
+            {
+                total += item.DeclaredValue * item.Quantity;
+            }
+        }
+        
+        return total;
+    }
+
+    private int GetItemsAddedByCollaborator(MudanzaCollaborator collaborator)
+    {
+        if (mudanza?.Items == null || string.IsNullOrEmpty(collaborator.UserId))
+            return 0;
+            
+        return mudanza.Items.Count(i => i.CreatedBy == collaborator.UserId.ToString());
+    }
+
+    private void ShowItemPhoto(MudanzaItem item)
+    {
+        selectedItem = item;
+        photoModal.Show();
+    }
+
+    private void ShowItemDetails(MudanzaItem item)
+    {
+        selectedItem = item;
+        itemDetailsModal.Show();
+    }
+
+    private void DeleteItem(MudanzaItem item)
+    {
+        selectedItem = item;
+        confirmDeleteModal.Show();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        try
+        {
+            if (selectedItem != null)
+            {
+                // Eliminar artículo
+                var result = await MudanzaService.DeleteItemAsync(selectedItem.Id);
+                
+                if (result)
+                {
+                    ToastService.Success(L["ItemDeletedSuccess"]);
+                    await LoadMudanzaAsync();
+                }
+                else
+                {
+                    ToastService.Error(L["ErrorDeletingItem"]);
+                }
+            }
+            
+            confirmDeleteModal.Hide();
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorDeletingItem"]);
+            Console.Error.WriteLine($"Error deleting item: {ex.Message}");
+        }
+    }
+
+    private void ShowChangeStatusModal()
+    {
+        newStatus = mudanza.Status;
+        statusChangeComments = "";
+        notifyCustomer = true;
+        statusModal.Show();
+    }
+
+    private async Task ChangeStatus()
+    {
+        try
+        {
+            // Obtener el ID del administrador
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var adminId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(adminId))
+            {
+                ToastService.Error(L["AdminNotAuthenticated"]);
+                return;
+            }
+            
+            // Cambiar el estado
+            var result = await MudanzaService.ChangeStatusAsync(
+                int.Parse(Id),
+                newStatus,
+                adminId,
+                statusChangeComments);
+                
+            if (result)
+            {
+                ToastService.Success(L["StatusChangedSuccess"]);
+                
+                // Notificar al cliente si está marcada la opción
+                if (notifyCustomer && mudanza.User != null)
+                {
+                    await EmailService.SendMudanzaStatusUpdateAsync(
+                        mudanza.User.Email,
+                        mudanza.Name,
+                        newStatus.ToString(),
+                        statusChangeComments);
+                }
+                
+                await LoadMudanzaAsync();
+                statusModal.Hide();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorChangingStatus"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorChangingStatus"]);
+            Console.Error.WriteLine($"Error changing status: {ex.Message}");
+        }
+    }
+
+    private async Task AddAdminComment()
+    {
+        if (string.IsNullOrWhiteSpace(newComment))
+        {
+            ToastService.Warning(L["CommentCannotBeEmpty"]);
+            return;
+        }
+        
+        try
+        {
+            // Obtener el ID del administrador
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var adminId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(adminId))
+            {
+                ToastService.Error(L["AdminNotAuthenticated"]);
+                return;
+            }
+            
+            var comment = new MudanzaComment
+            {
+                MudanzaId = int.Parse(Id),
+                UserId = adminId,
+                Content = newComment,
+                CreatedAt = DateTime.UtcNow,
+                IsAdminComment = true
+            };
+            
+            var result = await MudanzaService.AddCommentAsync(comment);
+            
+            if (result != null)
+            {
+                newComment = "";
+                ToastService.Success(L["CommentAddedSuccess"]);
+                await LoadMudanzaAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorAddingComment"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorAddingComment"]);
+            Console.Error.WriteLine($"Error adding comment: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateEstimatedCost()
+    {
+        try
+        {
+            var result = await MudanzaService.UpdateEstimatedCostAsync(int.Parse(Id), estimatedCost);
+            
+            if (result)
+            {
+                ToastService.Success(L["EstimatedCostUpdatedSuccess"]);
+                await LoadMudanzaAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorUpdatingEstimatedCost"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorUpdatingEstimatedCost"]);
+            Console.Error.WriteLine($"Error updating estimated cost: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateFinalCost()
+    {
+        try
+        {
+            var result = await MudanzaService.UpdateFinalCostAsync(int.Parse(Id), finalCost);
+            
+            if (result)
+            {
+                ToastService.Success(L["FinalCostUpdatedSuccess"]);
+                await LoadMudanzaAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorUpdatingFinalCost"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorUpdatingFinalCost"]);
+            Console.Error.WriteLine($"Error updating final cost: {ex.Message}");
+        }
+    }
+
+    private async Task UpdatePaymentStatus()
+    {
+        try
+        {
+            mudanza.PaymentStatus = paymentStatus;
+            var result = await MudanzaService.UpdateMudanzaAsync(mudanza);
+            
+            if (result)
+            {
+                ToastService.Success(L["PaymentStatusUpdatedSuccess"]);
+                await LoadMudanzaAsync();
+            }
+            else
+            {
+                ToastService.Error(L["ErrorUpdatingPaymentStatus"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorUpdatingPaymentStatus"]);
+            Console.Error.WriteLine($"Error updating payment status: {ex.Message}");
+        }
+    }
+
+    private void SendInvoice()
+    {
+        // Implementar envío de factura
+        ToastService.Info(L["InvoiceFeatureNotImplementedYet"]);
+    }
+
+    private void SendPaymentReminder()
+    {
+        // Implementar envío de recordatorio de pago
+        ToastService.Info(L["PaymentReminderFeatureNotImplementedYet"]);
+    }
+
+    private void SendEmailToCustomer()
+    {
+        // Implementar envío de correo al cliente
+        ToastService.Info(L["EmailFeatureNotImplementedYet"]);
+    }
+
+    private static Color GetStatusBadgeColor(MudanzaStatus status)
+    {
+        return status switch
+        {
+            MudanzaStatus.DraftOpen => Color.Light,
+            MudanzaStatus.DraftClosed => Color.Secondary,
+            MudanzaStatus.InReview => Color.Info,
+            MudanzaStatus.WaitingForDocuments => Color.Warning,
+            MudanzaStatus.ReceivedInWarehouseUS => Color.Primary,
+            MudanzaStatus.ReceivedInWarehouseMX => Color.Primary,
+            MudanzaStatus.WaitingForCrossing => Color.Warning,
+            MudanzaStatus.WaitingForShipment => Color.Warning,
+            MudanzaStatus.InTransit => Color.Info,
+            MudanzaStatus.Delivered => Color.Success,
+            MudanzaStatus.Completed => Color.Success,
+            _ => Color.Light
+        };
+    }
+}

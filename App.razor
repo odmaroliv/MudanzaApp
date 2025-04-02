@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using MudanzaApp.Components.Layout
+@using MudanzaApp.Components.Shared
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized Context="authNot">
+                    @if (authNot.User.Identity?.IsAuthenticated != true)
+                    {
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        <div class="container mt-5">
+                            <div class="alert alert-danger" role="alert">
+                                <h4 class="alert-heading">Access Denied</h4>
+                                <p>You do not have permission to access this resource.</p>
+                            </div>
+                        </div>
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <div class="d-flex justify-content-center mt-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div class="container mt-5">
+                    <div class="text-center">
+                        <h1 class="display-1">404</h1>
+                        <p class="lead">Sorry, there's nothing at this address.</p>
+                        <a href="/" class="btn btn-primary">Go Home</a>
+                    </div>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+     <!-- Agregar el componente ReconnectDisplay aquí -->
+    <ReconnectDisplay>
+        <Template>
+            <div class="reconnect-overlay">
+                <div class="reconnect-modal">
+                    <div class="reconnect-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
+                    <h3>Conexión perdida</h3>
+                    <p>Estamos intentando reconectar a la aplicación...</p>
+                    <div class="spinner-border text-primary mt-3" role="status">
+                        <span class="visually-hidden">Reconectando...</span>
+                    </div>
+
+                    <!-- Opcional: Botón para forzar recarga -->
+                    <button class="btn btn-primary mt-3" onclick="location.reload()">
+                        Recargar página
+                    </button>
+                </div>
+            </div>
+        </Template>
+    </ReconnectDisplay>
+    <ToastProvider />
+    <ModalProvider />
+</CascadingAuthenticationState>
+
+
+
+@code {
+    [Inject] private IStringLocalizer<SharedResource> L { get; set; }
+}

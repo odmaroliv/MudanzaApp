@@ -1,0 +1,267 @@
+﻿@* MudanzaApp/Pages/Dashboard.razor *@
+@page "/dashboard"
+@using System.Security.Claims
+@using Blazorise 
+@using Microsoft.AspNetCore.Components.Authorization
+@using Blazorise.Charts
+@attribute [Authorize]
+@inject IMudanzaService MudanzaService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>@L["Dashboard"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>@L["Dashboard"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Bienvenido, administre sus mudanzas y vea sus estadísticas.</span>
+                }
+                else
+                {
+                    <span>Welcome, manage your moves and see your statistics.</span>
+                }
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <Blazorise.Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                <Icon Name="IconName.PlusCircle" />
+                @L["CreateMove"]
+            </Blazorise.Button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else if (userMudanzas == null || !userMudanzas.Any())
+    {
+        <Alert Color="Color.Info">
+            <AlertMessage>
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Aún no tiene mudanzas. ¡Cree una nueva mudanza para comenzar!</span>
+                }
+                else
+                {
+                    <span>You don't have any moves yet. Create a new move to get started!</span>
+                }
+            </AlertMessage>
+            <AlertDescription>
+                <Blazorise.Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                    <Icon Name="IconName.PlusCircle" />
+                    @L["CreateMove"]
+                </Blazorise.Button>
+            </AlertDescription>
+        </Alert>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Stats cards -->
+            <div class="col-md-4 mb-4">
+                <Card Background="Background.Primary" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.FileAlt" />
+                            @L["InProgress"]
+                        </CardTitle>
+                        <div class="display-4">@inProgressCount</div>
+                    </CardBody>
+                </Card>
+            </div>
+            <div class="col-md-4 mb-4">
+                <Card Background="Background.Success" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.CheckCircle" />
+                            @L["Completed"]
+                        </CardTitle>
+                        <div class="display-4">@completedCount</div>
+                    </CardBody>
+                </Card>
+            </div>
+            <div class="col-md-4 mb-4">
+                <Card Background="Background.Info" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.Bookmark" />
+                            @L["TotalItems"]
+                        </CardTitle>
+                        <div class="display-4">@totalItems</div>
+                    </CardBody>
+                </Card>
+            </div>
+        </div>
+
+        <!-- Recent moves -->
+        <h3 class="mb-3">@L["RecentMoves"]</h3>
+        <div class="row">
+            @foreach (var mudanza in recentMudanzas)
+            {
+                <div class="col-md-6 mb-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>@mudanza.Name</CardTitle>
+                            <Badge Color="@GetStatusBadgeColor(mudanza.Status)">
+                                @L[$"Status_{mudanza.Status}"]
+                            </Badge>
+                        </CardHeader>
+                        <CardBody>
+                            <div class="mb-2">
+                                <strong>@L["Origin"]:</strong> @mudanza.OriginLocation
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["Destination"]:</strong> @mudanza.DestinationLocation
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["CreatedAt"]:</strong> @mudanza.CreatedAt.ToLocalTime().ToString("g")
+                            </div>
+                            <div class="mb-2">
+                                <strong>@L["Items"]:</strong> @(mudanza.Items?.Count ?? 0)
+                            </div>
+                        </CardBody>
+                        <CardFooter>
+                            <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo($"/mudanza/{mudanza.Id}"))">
+                                <Icon Name="IconName.Eye" />
+                                @L["ViewDetails"]
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            }
+        </div>
+
+        <!-- All moves link -->
+        <div class="text-center mt-3 mb-5">
+            <Button Color="Color.Secondary" Clicked="@(() => NavigationManager.NavigateTo("/my-moves"))">
+                <Icon Name="IconName.ListUl" />
+                @L["ViewAllMoves"]
+            </Button>
+        </div>
+
+        <!-- Status chart -->
+        <h3 class="mb-3">@L["MovesByStatus"]</h3>
+        <div class="row">
+            <div class="col-md-8 offset-md-2 mb-5">
+               <Chart @ref="statusChart" TItem="int" Type="ChartType.Pie">
+    <ChartDataset 
+        TItem="int" 
+        Data="@statusCounts.Values.ToList()" 
+        BackgroundColor="@chartColors" />
+</Chart>
+                <div class="text-center mt-3">
+                    @foreach (var status in statusCounts.Keys)
+                    {
+                        <Badge Color="@GetStatusBadgeColor(status)" class="me-2 mb-2">
+                            @L[$"Status_{status}"] (@statusCounts[status])
+                        </Badge>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private IEnumerable<Data.Models.Mudanza> userMudanzas;
+    private IEnumerable<Data.Models.Mudanza> recentMudanzas;
+    private int inProgressCount;
+    private int completedCount;
+    private int totalItems;
+    private Dictionary<MudanzaStatus, int> statusCounts = new();
+    private Chart<int> statusChart;
+    private List<string> chartColors = new()
+    {
+        "#4287f5", "#42c9f5", "#42f59e", "#f5d742", "#f59c42", "#f54e42", "#9442f5", "#f542e2"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserMudanzasAsync();
+    }
+
+    private async Task LoadUserMudanzasAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Obtener el usuario actual
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                ToastService.Error(L["ErrorLoadingMoves"]);
+                return;
+            }
+            
+            // Cargar las mudanzas del usuario
+            userMudanzas = await MudanzaService.GetUserMudanzasAsync(userId);
+            
+            // Calcular estadísticas
+            CalculateStatistics();
+            
+            // Obtener las mudanzas recientes (últimas 4)
+            recentMudanzas = userMudanzas.Take(4);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingMoves"]);
+            Console.Error.WriteLine($"Error loading mudanzas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CalculateStatistics()
+    {
+        if (userMudanzas == null)
+            return;
+            
+        // Contar mudanzas en progreso (no completadas)
+        inProgressCount = userMudanzas.Count(m => m.Status != MudanzaStatus.Completed);
+        
+        // Contar mudanzas completadas
+        completedCount = userMudanzas.Count(m => m.Status == MudanzaStatus.Completed);
+        
+        // Contar total de artículos
+        totalItems = userMudanzas.Sum(m => m.Items?.Count ?? 0);
+        
+        // Contar mudanzas por estado
+        statusCounts = userMudanzas
+            .GroupBy(m => m.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private static Color GetStatusBadgeColor(MudanzaStatus status)
+    {
+        return status switch
+        {
+            MudanzaStatus.DraftOpen => Color.Light,
+            MudanzaStatus.DraftClosed => Color.Secondary,
+            MudanzaStatus.InReview => Color.Info,
+            MudanzaStatus.WaitingForDocuments => Color.Warning,
+            MudanzaStatus.ReceivedInWarehouseUS => Color.Primary,
+            MudanzaStatus.ReceivedInWarehouseMX => Color.Primary,
+            MudanzaStatus.WaitingForCrossing => Color.Warning,
+            MudanzaStatus.WaitingForShipment => Color.Warning,
+            MudanzaStatus.InTransit => Color.Info,
+            MudanzaStatus.Delivered => Color.Success,
+            MudanzaStatus.Completed => Color.Success,
+            _ => Color.Light
+        };
+    }
+}

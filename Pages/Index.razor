@@ -1,0 +1,343 @@
+﻿@* MudanzaApp/Pages/Index.razor *@
+@page "/"
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+
+<PageTitle>@L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <div class="p-4">
+                <h1 class="display-4 fw-bold">@L["AppName"]</h1>
+                <p class="lead">
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>Simplifique su mudanza internacional con nuestra plataforma colaborativa.</span>
+                    }
+                    else
+                    {
+                        <span>Simplify your international move with our collaborative platform.</span>
+                    }
+                </p>
+                <p>
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>Organice su mudanza, colabore con familiares y amigos, y manténgase informado en cada paso del proceso.</span>
+                    }
+                    else
+                    {
+                        <span>Organize your move, collaborate with family and friends, and stay informed every step of the way.</span>
+                    }
+                </p>
+                <div class="mt-4">
+                    <AuthorizeView>
+                        <Authorized>
+                            <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                                <Icon Name="IconName.PlusCircle" />
+                                @L["CreateMove"]
+                            </Button>
+                            <Button Color="Color.Secondary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/my-moves"))">
+                                <Icon Name="IconName.Home" />
+                                @L["MyMoves"]
+                            </Button>
+                        </Authorized>
+                        <NotAuthorized>
+                            <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Register"))">
+                                <Icon Name="IconName.UserPlus" />
+                                @L["Register"]
+                            </Button>
+                            <Button Color="Color.Secondary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Login"))">
+                                <Icon Name="IconName.UserCheck" />
+                                @L["Login"]
+                            </Button>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <img src="/images/moving-illustration.svg" alt="Moving illustration" class="img-fluid" />
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold mb-4">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>¿Por qué elegirnos?</span>
+                }
+                else
+                {
+                    <span>Why Choose Us?</span>
+                }
+            </h2>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <Icon Name="IconName.Users" Style="font-size: 3rem; color: var(--bs-primary);" />
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Colaboración en Tiempo Real</span>
+                        }
+                        else
+                        {
+                            <span>Real-time Collaboration</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Invite a familiares y amigos para colaborar en su mudanza. Cada uno puede agregar sus artículos de forma simultánea.</span>
+                        }
+                        else
+                        {
+                            <span>Invite family and friends to collaborate on your move. Everyone can add their items simultaneously.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+        <div class="col-md-4">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <Icon Name="IconName.Code" Style="font-size: 3rem; color: var(--bs-primary);" />
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Análisis de Fotos con IA</span>
+                        }
+                        else
+                        {
+                            <span>AI Photo Analysis</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Tome fotos de sus artículos y nuestra IA los identificará automáticamente, ahorrándole tiempo en la creación del inventario.</span>
+                        }
+                        else
+                        {
+                            <span>Take photos of your items and our AI will automatically identify them, saving you time in creating your inventory.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+        <div class="col-md-4">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <Icon Name="IconName.Smartphone" Style="font-size: 3rem; color: var(--bs-primary);" />
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Acceso Móvil</span>
+                        }
+                        else
+                        {
+                            <span>Mobile Access</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Acceda a su mudanza desde cualquier dispositivo. Genere un código QR para abrir rápidamente su mudanza en su teléfono.</span>
+                        }
+                        else
+                        {
+                            <span>Access your move from any device. Generate a QR code to quickly open your move on your phone.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold mb-4">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>¿Cómo funciona?</span>
+                }
+                else
+                {
+                    <span>How It Works</span>
+                }
+            </h2>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-3">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
+                            <span class="text-white fw-bold">1</span>
+                        </div>
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Cree su Mudanza</span>
+                        }
+                        else
+                        {
+                            <span>Create Your Move</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Regístrese y cree una nueva mudanza con información básica como origen y destino.</span>
+                        }
+                        else
+                        {
+                            <span>Sign up and create a new move with basic information like origin and destination.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+        <div class="col-md-3">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
+                            <span class="text-white fw-bold">2</span>
+                        </div>
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Agregue Artículos</span>
+                        }
+                        else
+                        {
+                            <span>Add Items</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Agregue sus artículos manualmente o use nuestra función de análisis de fotos con IA.</span>
+                        }
+                        else
+                        {
+                            <span>Add your items manually or use our AI photo analysis feature.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+        <div class="col-md-3">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
+                            <span class="text-white fw-bold">3</span>
+                        </div>
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Envíe para Revisión</span>
+                        }
+                        else
+                        {
+                            <span>Submit for Review</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Una vez completado, envíe su mudanza para revisión y cotización por nuestro equipo.</span>
+                        }
+                        else
+                        {
+                            <span>Once completed, submit your move for review and quotation by our team.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+        <div class="col-md-3">
+            <Card>
+                <CardBody>
+                    <div class="text-center mb-3">
+                        <div class="bg-primary rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
+                            <span class="text-white fw-bold">4</span>
+                        </div>
+                    </div>
+                    <CardTitle Size="5" class="text-center">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Seguimiento en Tiempo Real</span>
+                        }
+                        else
+                        {
+                            <span>Real-time Tracking</span>
+                        }
+                    </CardTitle>
+                    <CardText>
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>Siga el progreso de su mudanza en cada etapa del proceso.</span>
+                        }
+                        else
+                        {
+                            <span>Follow the progress of your move at every stage of the process.</span>
+                        }
+                    </CardText>
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+
+    <div class="row mt-5 mb-5">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold mb-4">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>¿Listo para comenzar?</span>
+                }
+                else
+                {
+                    <span>Ready to get started?</span>
+                }
+            </h2>
+          <AuthorizeView>
+            <Authorized Context="authContext">
+                <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/create-move"))">
+                    <Icon Name="IconName.PlusSquare" />
+                    @L["CreateMove"]
+                </Button>
+            </Authorized>
+            <NotAuthorized Context="notAuthContext">
+                <Button Color="Color.Primary" Size="Size.Large" Clicked="@(() => NavigationManager.NavigateTo("/Identity/Account/Register"))">
+                    <Icon Name="IconName.UserPlus" />
+                    @L["Register"]
+                </Button>
+            </NotAuthorized>
+        </AuthorizeView>
+        </div>
+    </div>
+</div>
+
+@code {
+    // No additional code needed
+}

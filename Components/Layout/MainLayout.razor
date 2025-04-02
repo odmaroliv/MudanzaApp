@@ -1,0 +1,253 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Microsoft.AspNetCore.Identity
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<SharedResource> L
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>@GetPageTitle()</PageTitle>
+
+<Layout>
+    <LayoutHeader Fixed>
+        <Bar Background="Background.Primary" ThemeContrast="ThemeContrast.Light">
+            <BarBrand>
+                <BarItem>
+                    <BarLink To="">
+                        <BarIcon IconName="IconName.Truck" />
+                        @L["AppName"]
+                    </BarLink>
+                </BarItem>
+            </BarBrand>
+            <BarToggler />
+            <BarMenu>
+                <BarStart>
+                    <BarItem>
+                        <BarLink To="">
+                            <BarIcon IconName="IconName.Home" />
+                            @L["Home"]
+                        </BarLink>
+                    </BarItem>
+                    <AuthorizeView>
+                        <Authorized>
+                            <BarItem>
+                                <BarLink To="dashboard">
+                                    <BarIcon IconName="IconName.Dashboard" />
+                                    @L["Dashboard"]
+                                </BarLink>
+                            </BarItem>
+                            <BarItem>
+                                <BarLink To="my-moves">
+                                    <BarIcon IconName="IconName.Home" />
+                                    @L["MyMoves"]
+                                </BarLink>
+                            </BarItem>
+                            <BarItem>
+                                <BarLink To="create-move">
+                                    <BarIcon IconName="IconName.ClinicMedical" />
+                                    @L["CreateMove"]
+                                </BarLink>
+                            </BarItem>
+                            <AuthorizeView Roles="Admin" Context="adminContext">
+                                <BarItem>
+                                    <BarDropdown>
+                                        <BarDropdownToggle>
+                                            <BarIcon IconName="IconName.Indent" />
+                                            @L["AdminDashboard"]
+                                        </BarDropdownToggle>
+                                        <BarDropdownMenu>
+                                            <BarDropdownItem To="admin/dashboard">
+                                                <BarIcon IconName="IconName.Dashboard" />
+                                                @L["Dashboard"]
+                                            </BarDropdownItem>
+                                            <BarDropdownItem To="admin/users">
+                                                <BarIcon IconName="IconName.Users" />
+                                                @L["Users"]
+                                            </BarDropdownItem>
+                                            <BarDropdownItem To="admin/settings">
+                                                <BarIcon IconName="IconName.Key" />
+                                                @L["Settings"]
+                                            </BarDropdownItem>
+                                        </BarDropdownMenu>
+                                    </BarDropdown>
+                                </BarItem>
+                            </AuthorizeView>
+                        </Authorized>
+                    </AuthorizeView>
+                </BarStart>
+                <BarEnd>
+                    <BarItem>
+                        <BarDropdown>
+                            <BarDropdownToggle>
+                                <BarIcon IconName="IconName.Globe" />
+                                @L["Language"]
+                            </BarDropdownToggle>
+                            <BarDropdownMenu>
+                                <BarDropdownItem Clicked="@(() => ChangeLanguage("en-US"))">
+                                    @L["English"]
+                                </BarDropdownItem>
+                                <BarDropdownItem Clicked="@(() => ChangeLanguage("es-MX"))">
+                                    @L["Spanish"]
+                                </BarDropdownItem>
+                            </BarDropdownMenu>
+                        </BarDropdown>
+                    </BarItem>
+                    <AuthorizeView>
+                        <Authorized Context="authContext">
+                            <BarItem>
+                                <BarDropdown>
+                                    <BarDropdownToggle>
+                                        <BarIcon IconName="IconName.User" />
+                                        @authContext.User.Identity?.Name
+                                    </BarDropdownToggle>
+                                    <BarDropdownMenu>
+                                        <BarDropdownItem To="Identity/Account/Manage">
+                                            <BarIcon IconName="IconName.Settings" />
+                                            @L["Profile"]
+                                        </BarDropdownItem>
+                                        <BarDropdownItem To="photo-credits">
+                                            <BarIcon IconName="IconName.Camera" />
+                                            @L["PhotoCredits"]
+                                        </BarDropdownItem>
+                                        <BarDropdownDivider />
+                                        <BarDropdownItem To="Identity/Account/LogOut">
+                                            <BarIcon IconName="IconName.Running" />
+                                            @L["Logout"]
+                                        </BarDropdownItem>
+                                    </BarDropdownMenu>
+                                </BarDropdown>
+                            </BarItem>
+                        </Authorized>
+                        <NotAuthorized Context="notAuthContext">
+                            <BarItem>
+                                <BarLink To="Identity/Account/Register">
+                                    <BarIcon IconName="IconName.UserPlus" />
+                                    @L["Register"]
+                                </BarLink>
+                            </BarItem>
+                            <BarItem>
+                                <BarLink To="Identity/Account/Login">
+                                    <BarIcon IconName="IconName.UserCheck" />
+                                    @L["Login"]
+                                </BarLink>
+                            </BarItem>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </BarEnd>
+            </BarMenu>
+        </Bar>
+    </LayoutHeader>
+    <LayoutContent Padding="Padding.Is4.OnX">
+        <Container Fluid>
+            <ToastContainer />
+            @Body
+        </Container>
+    </LayoutContent>
+    <LayoutFooter Fixed>
+        <Footer>
+            <Container>
+                <Text>
+                    &copy; @DateTime.Now.Year - @L["AppName"]
+                </Text>
+            </Container>
+        </Footer>
+    </LayoutFooter>
+</Layout>
+
+@code {
+    private string currentCulture = "en-US";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Intentar cargar la cultura guardada
+        try
+        {
+            var result = await ProtectedSessionStore.GetAsync<string>("culture");
+            if (result.Success && !string.IsNullOrEmpty(result.Value))
+            {
+                currentCulture = result.Value;
+            }
+            else
+            {
+                // Intentar obtener la cultura del usuario si está autenticado
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                if (authState.User.Identity.IsAuthenticated)
+                {
+                    var user = await UserManager.GetUserAsync(authState.User);
+                    if (user != null && !string.IsNullOrEmpty(user.PreferredLanguage))
+                    {
+                        currentCulture = user.PreferredLanguage;
+                    }
+                }
+            }
+
+            // Aplicar la cultura
+            await ApplyCultureAsync(currentCulture);
+        }
+        catch (Exception)
+        {
+            // En caso de error, usar la cultura predeterminada
+        }
+    }
+
+    private async Task ChangeLanguage(string culture)
+    {
+        if (currentCulture != culture)
+        {
+            currentCulture = culture;
+            await ApplyCultureAsync(culture);
+
+            // Guardar la preferencia de cultura
+            await ProtectedSessionStore.SetAsync("culture", culture);
+
+            // Actualizar la preferencia del usuario si está autenticado
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    user.PreferredLanguage = culture;
+                    await UserManager.UpdateAsync(user);
+                }
+            }
+
+            // Forzar recarga para aplicar los cambios de cultura
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
+    }
+
+    private async Task ApplyCultureAsync(string culture)
+    {
+        // Establecer la cultura actual
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
+        CultureInfo.CurrentUICulture = new CultureInfo(culture);
+    }
+
+    private string GetPageTitle()
+    {
+        // Obtener el título de la página basado en la ruta actual
+        var uri = new Uri(NavigationManager.Uri);
+        var path = uri.AbsolutePath;
+        
+        if (path == "/")
+            return L["AppName"].Value;
+            
+        if (path.Contains("/dashboard"))
+            return $"{L["Dashboard"].Value} - {L["AppName"].Value}";
+            
+        if (path.Contains("/my-moves"))
+            return $"{L["MyMoves"].Value} - {L["AppName"].Value}";
+            
+        if (path.Contains("/create-move"))
+            return $"{L["CreateMove"].Value} - {L["AppName"].Value}";
+            
+        if (path.Contains("/admin"))
+            return $"{L["AdminDashboard"].Value} - {L["AppName"].Value}";
+            
+        // Título genérico para otras páginas
+        return L["AppName"].Value;
+    }
+}

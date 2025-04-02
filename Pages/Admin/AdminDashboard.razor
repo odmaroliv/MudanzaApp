@@ -1,0 +1,373 @@
+﻿@* MudanzaApp/Pages/Admin/AdminDashboard.razor *@
+@page "/admin/dashboard"
+@using Blazorise.Charts
+@attribute [Authorize(Roles = "Admin")]
+@inject IMudanzaService MudanzaService
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>@L["AdminDashboard"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>@L["AdminDashboard"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Administre todas las mudanzas, usuarios y configuraciones.</span>
+                }
+                else
+                {
+                    <span>Manage all moves, users, and settings.</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Stats cards -->
+            <div class="col-md-3 mb-4">
+                <Card Background="Background.Primary" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.FileAlt" />
+                            @L["TotalMoves"]
+                        </CardTitle>
+                        <div class="display-4">@(allMudanzas?.Count() ?? 0)</div>
+                    </CardBody>
+                </Card>
+            </div>
+            <div class="col-md-3 mb-4">
+                <Card Background="Background.Warning" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.ExclamationTriangle" />
+                            @L["PendingReview"]
+                        </CardTitle>
+                        <div class="display-4">@pendingReviewCount</div>
+                    </CardBody>
+                </Card>
+            </div>
+            <div class="col-md-3 mb-4">
+                <Card Background="Background.Info" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.Truck" />
+                            @L["InTransit"]
+                        </CardTitle>
+                        <div class="display-4">@inTransitCount</div>
+                    </CardBody>
+                </Card>
+            </div>
+            <div class="col-md-3 mb-4">
+                <Card Background="Background.Success" TextColor="TextColor.White">
+                    <CardBody>
+                        <CardTitle Size="5">
+                            <Icon Name="IconName.CheckCircle" />
+                            @L["Completed"]
+                        </CardTitle>
+                        <div class="display-4">@completedCount</div>
+                    </CardBody>
+                </Card>
+            </div>
+        </div>
+
+        <!-- Filter options -->
+        <Card Class="mb-4">
+            <CardBody>
+                <div class="row">
+                    <div class="col-md-4">
+                        <Field>
+                            <FieldLabel>@L["FilterByStatus"]</FieldLabel>
+                            <Select TValue="MudanzaStatus?" @bind-SelectedValue="@selectedStatus">
+                                <SelectItem TValue="MudanzaStatus?" Value="@null">@L["AllStatuses"]</SelectItem>
+                                @foreach (MudanzaStatus status in Enum.GetValues(typeof(MudanzaStatus)))
+                                {
+                                    <SelectItem TValue="MudanzaStatus?" Value="@status">@L[$"Status_{status}"]</SelectItem>
+                                }
+                            </Select>
+                        </Field>
+                    </div>
+                    <div class="col-md-4">
+                        <Field>
+                            <FieldLabel>@L["SearchByName"]</FieldLabel>
+                            <TextEdit @bind-Text="@searchTerm" Placeholder="@L["SearchPlaceholder"]" />
+                        </Field>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <Button Color="Color.Primary" Clicked="ApplyFilters" Class="me-2">
+                            <Icon Name="IconName.Search" />
+                            @L["ApplyFilters"]
+                        </Button>
+                        <Button Color="Color.Secondary" Clicked="ClearFilters">
+                            <Icon Name="IconName.Times" />
+                            @L["ClearFilters"]
+                        </Button>
+                    </div>
+                </div>
+            </CardBody>
+        </Card>
+
+        <!-- Pending reviews -->
+        @if (pendingReviewCount > 0)
+        {
+            <h3 class="mb-3">@L["PendingReviews"]</h3>
+            <div class="table-responsive mb-5">
+                <Table Bordered Striped Hoverable>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>@L["MoveName"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Client"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Origin"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Destination"]</TableHeaderCell>
+                            <TableHeaderCell>@L["ItemCount"]</TableHeaderCell>
+                            <TableHeaderCell>@L["SubmittedAt"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Actions"]</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @foreach (var mudanza in pendingReviewMudanzas)
+                        {
+                            <TableRow>
+                                <TableRowCell>@mudanza.Name</TableRowCell>
+                                <TableRowCell>@mudanza.User?.UserName</TableRowCell>
+                                <TableRowCell>@mudanza.OriginLocation</TableRowCell>
+                                <TableRowCell>@mudanza.DestinationLocation</TableRowCell>
+                                <TableRowCell>@(mudanza.Items?.Count ?? 0)</TableRowCell>
+                                <TableRowCell>@(mudanza.SubmittedAt?.ToLocalTime().ToString("g") ?? "-")</TableRowCell>
+                                <TableRowCell>
+                                    <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => NavigationManager.NavigateTo($"/admin/mudanza/{mudanza.Id}"))">
+                                        <Icon Name="IconName.Eye" />
+                                        @L["Review"]
+                                    </Button>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    </TableBody>
+                </Table>
+            </div>
+        }
+
+        <!-- All moves -->
+        <h3 class="mb-3">@L["AllMoves"]</h3>
+        @if (filteredMudanzas == null || !filteredMudanzas.Any())
+        {
+            <Alert Color="Color.Info">
+                <AlertMessage>@L["NoMovesFound"]</AlertMessage>
+            </Alert>
+        }
+        else
+        {
+            <div class="table-responsive mb-5">
+                <Table Bordered Striped Hoverable>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>@L["MoveName"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Client"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Status"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Origin"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Destination"]</TableHeaderCell>
+                            <TableHeaderCell>@L["ItemCount"]</TableHeaderCell>
+                            <TableHeaderCell>@L["CreatedAt"]</TableHeaderCell>
+                            <TableHeaderCell>@L["Actions"]</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @foreach (var mudanza in filteredMudanzas.Take(displayLimit))
+                        {
+                            <TableRow>
+                                <TableRowCell>@mudanza.Name</TableRowCell>
+                                <TableRowCell>@mudanza.User?.UserName</TableRowCell>
+                                <TableRowCell>
+                                    <Badge Color="@GetStatusBadgeColor(mudanza.Status)">
+                                        @L[$"Status_{mudanza.Status}"]
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell>@mudanza.OriginLocation</TableRowCell>
+                                <TableRowCell>@mudanza.DestinationLocation</TableRowCell>
+                                <TableRowCell>@(mudanza.Items?.Count ?? 0)</TableRowCell>
+                                <TableRowCell>@mudanza.CreatedAt.ToLocalTime().ToString("g")</TableRowCell>
+                                <TableRowCell>
+                                    <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => NavigationManager.NavigateTo($"/admin/mudanza/{mudanza.Id}"))">
+                                        <Icon Name="IconName.Eye" />
+                                        @L["ViewDetails"]
+                                    </Button>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    </TableBody>
+                </Table>
+
+                @if (filteredMudanzas.Count() > displayLimit)
+                {
+                    <div class="text-center mt-3">
+                        <Button Color="Color.Secondary" Clicked="@LoadMore">
+                            <Icon Name="IconName.PlusCircle" />
+                            @L["LoadMore"]
+                        </Button>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Status chart -->
+        <h3 class="mb-3">@L["MovesByStatus"]</h3>
+        <div class="row">
+            <div class="col-md-8 offset-md-2 mb-5">
+               <Chart @ref="statusChart" TItem="int" Type="ChartType.Pie">
+                    <ChartDataset 
+                        TItem="int" 
+                        Data="@statusCounts.Values.ToList()" 
+                        BackgroundColor="@chartColors" />
+                </Chart>
+                <div class="text-center mt-3">
+                    @foreach (var status in statusCounts.Keys)
+                    {
+                        <Badge Color="@GetStatusBadgeColor(status)" class="me-2 mb-2">
+                            @L[$"Status_{status}"] (@statusCounts[status])
+                        </Badge>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private IEnumerable<Mudanza> allMudanzas;
+    private IEnumerable<Mudanza> filteredMudanzas;
+    private IEnumerable<Mudanza> pendingReviewMudanzas;
+    private int pendingReviewCount;
+    private int inTransitCount;
+    private int completedCount;
+    private Dictionary<MudanzaStatus, int> statusCounts = new();
+    private Chart<int> statusChart;
+    private List<string> chartColors = new()
+    {
+        "#4287f5", "#42c9f5", "#42f59e", "#f5d742", "#f59c42", "#f54e42", "#9442f5", "#f542e2"
+    };
+    
+    private MudanzaStatus? selectedStatus = null;
+    private string searchTerm = "";
+    private int displayLimit = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMudanzasAsync();
+    }
+
+    private async Task LoadMudanzasAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Cargar todas las mudanzas
+            allMudanzas = await MudanzaService.GetAllMudanzasAsync();
+            filteredMudanzas = allMudanzas;
+            
+            // Calcular estadísticas
+            CalculateStatistics();
+            
+            // Obtener mudanzas pendientes de revisión
+            pendingReviewMudanzas = allMudanzas.Where(m => m.Status == MudanzaStatus.InReview);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingMoves"]);
+            Console.Error.WriteLine($"Error loading mudanzas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CalculateStatistics()
+    {
+        if (allMudanzas == null)
+            return;
+            
+        // Contar mudanzas pendientes de revisión
+        pendingReviewCount = allMudanzas.Count(m => m.Status == MudanzaStatus.InReview);
+        
+        // Contar mudanzas en tránsito
+        inTransitCount = allMudanzas.Count(m => m.Status == MudanzaStatus.InTransit);
+        
+        // Contar mudanzas completadas
+        completedCount = allMudanzas.Count(m => m.Status == MudanzaStatus.Completed);
+        
+        // Contar mudanzas por estado
+        statusCounts = allMudanzas
+            .GroupBy(m => m.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private void ApplyFilters()
+    {
+        filteredMudanzas = allMudanzas;
+        
+        // Filtrar por estado
+        if (selectedStatus.HasValue)
+        {
+            filteredMudanzas = filteredMudanzas.Where(m => m.Status == selectedStatus.Value);
+        }
+        
+        // Filtrar por término de búsqueda
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filteredMudanzas = filteredMudanzas.Where(m => 
+                m.Name.ToLower().Contains(term) || 
+                m.OriginLocation.ToLower().Contains(term) || 
+                m.DestinationLocation.ToLower().Contains(term) ||
+                (m.User?.UserName?.ToLower().Contains(term) ?? false));
+        }
+        
+        // Restablecer el límite de visualización
+        displayLimit = 10;
+    }
+
+    private void ClearFilters()
+    {
+        selectedStatus = null;
+        searchTerm = "";
+        filteredMudanzas = allMudanzas;
+        displayLimit = 10;
+    }
+
+    private void LoadMore()
+    {
+        displayLimit += 10;
+    }
+
+    private static Color GetStatusBadgeColor(MudanzaStatus status)
+    {
+        return status switch
+        {
+            MudanzaStatus.DraftOpen => Color.Light,
+            MudanzaStatus.DraftClosed => Color.Secondary,
+            MudanzaStatus.InReview => Color.Info,
+            MudanzaStatus.WaitingForDocuments => Color.Warning,
+            MudanzaStatus.ReceivedInWarehouseUS => Color.Primary,
+            MudanzaStatus.ReceivedInWarehouseMX => Color.Primary,
+            MudanzaStatus.WaitingForCrossing => Color.Warning,
+            MudanzaStatus.WaitingForShipment => Color.Warning,
+            MudanzaStatus.InTransit => Color.Info,
+            MudanzaStatus.Delivered => Color.Success,
+            MudanzaStatus.Completed => Color.Success,
+            _ => Color.Light
+        };
+    }
+}

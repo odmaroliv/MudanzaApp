@@ -1,0 +1,682 @@
+﻿@* MudanzaApp/Pages/Admin/AdminUsers.razor *@
+@page "/admin/users"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize(Roles = "Admin")]
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<PageTitle>@L["UserManagement"] - @L["AppName"]</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>@L["UserManagement"]</h1>
+            <p class="lead">
+                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                {
+                    <span>Administre usuarios, roles y permisos.</span>
+                }
+                else
+                {
+                    <span>Manage users, roles, and permissions.</span>
+                }
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <Button Color="Color.Primary" Clicked="ShowCreateUserModal">
+                <Icon Name="IconName.UserPlus" />
+                @L["CreateUser"]
+            </Button>
+        </div>
+    </div>
+
+    <Card>
+        <CardBody>
+            <Field>
+                <FieldLabel>@L["Filter"]</FieldLabel>
+                <div class="input-group">
+                    <TextEdit @bind-Text="@searchTerm" Placeholder="@L["SearchByNameOrEmail"]" />
+                    <Button Color="Color.Primary" Clicked="ApplyFilter">
+                        <Icon Name="IconName.Search" />
+                    </Button>
+                    <Button Color="Color.Secondary" Clicked="ClearFilter">
+                        <Icon Name="IconName.Times" />
+                    </Button>
+                </div>
+            </Field>
+        </CardBody>
+    </Card>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <Spinner Color="Color.Primary" Size="Size.Large" />
+        </div>
+    }
+    else if (users == null || !users.Any())
+    {
+        <Alert Color="Color.Info" Class="mt-4">
+            <AlertMessage>
+                @if (string.IsNullOrEmpty(searchTerm))
+                {
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>No hay usuarios en el sistema.</span>
+                    }
+                    else
+                    {
+                        <span>There are no users in the system.</span>
+                    }
+                }
+                else
+                {
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <span>No se encontraron usuarios que coincidan con la búsqueda.</span>
+                    }
+                    else
+                    {
+                        <span>No users found matching the search criteria.</span>
+                    }
+                }
+            </AlertMessage>
+        </Alert>
+    }
+    else
+    {
+        <div class="table-responsive mt-4">
+            <Table Striped Hoverable Bordered>
+                <TableHeader>
+                    <TableRow>
+                        <TableHeaderCell>@L["Name"]</TableHeaderCell>
+                        <TableHeaderCell>@L["Email"]</TableHeaderCell>
+                        <TableHeaderCell>@L["PhoneNumber"]</TableHeaderCell>
+                        <TableHeaderCell>@L["Roles"]</TableHeaderCell>
+                        <TableHeaderCell>@L["EmailConfirmed"]</TableHeaderCell>
+                        <TableHeaderCell>@L["Actions"]</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    @foreach (var user in users)
+                    {
+                        <TableRow>
+                            <TableRowCell>
+                                @if (!string.IsNullOrEmpty(user.FirstName) || !string.IsNullOrEmpty(user.LastName))
+                                {
+                                    @($"{user.FirstName} {user.LastName}")
+                                }
+                                else
+                                {
+                                    <em>@L["NoName"]</em>
+                                }
+                            </TableRowCell>
+                            <TableRowCell>@user.Email</TableRowCell>
+                            <TableRowCell>
+                                @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                {
+                                    @user.PhoneNumber
+                                }
+                                else
+                                {
+                                    <em>@L["NoPhoneNumber"]</em>
+                                }
+                            </TableRowCell>
+                            <TableRowCell>
+                                @if (userRoles.ContainsKey(user.Id))
+                                {
+                                    @foreach (var role in userRoles[user.Id])
+                                    {
+                                        <Badge Color="@GetRoleBadgeColor(role)" Class="me-1">@role</Badge>
+                                    }
+                                }
+                                else
+                                {
+                                    <em>@L["NoRoles"]</em>
+                                }
+                            </TableRowCell>
+                            <TableRowCell>
+                                @if (user.EmailConfirmed)
+                                {
+                                    <Badge Color="Color.Success">@L["Yes"]</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="Color.Warning">@L["No"]</Badge>
+                                }
+                            </TableRowCell>
+                            <TableRowCell>
+                                <div class="d-flex">
+                                    <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => EditUser(user))" Class="me-1">
+                                        <Icon Name="IconName.Edit" />
+                                    </Button>
+                                    <Button Color="Color.Info" Size="Size.Small" Clicked="@(() => ManageRoles(user))" Class="me-1">
+                                        <Icon Name="IconName.Tag" />
+                                    </Button>
+                                    <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => DeleteUser(user))">
+                                        <Icon Name="IconName.TimesCircle" />
+                                    </Button>
+                                </div>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    }
+
+    <!-- Modales -->
+    <Modal @ref="userModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@(isEditMode ? L["EditUser"] : L["CreateUser"])</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>@L["FirstName"]</FieldLabel>
+                    <TextEdit @bind-Text="@model.FirstName" />
+                </Field>
+
+                <Field>
+                    <FieldLabel>@L["LastName"]</FieldLabel>
+                    <TextEdit @bind-Text="@model.LastName" />
+                </Field>
+
+                <Field>
+                    <FieldLabel>@L["Email"]</FieldLabel>
+                    <TextEdit @bind-Text="@model.Email" ReadOnly="@isEditMode" />
+                </Field>
+
+                <Field>
+                    <FieldLabel>@L["PhoneNumber"]</FieldLabel>
+                    <TextEdit @bind-Text="@model.PhoneNumber" />
+                </Field>
+
+                <Field>
+                    <FieldLabel>@L["WhatsAppNumber"]</FieldLabel>
+                    <TextEdit @bind-Text="@model.WhatsAppNumber" />
+                </Field>
+
+                @if (!isEditMode)
+                {
+                    <Field>
+                        <FieldLabel>@L["Password"]</FieldLabel>
+                        <TextEdit @bind-Text="@model.Password" Role="TextRole.Password" />
+                    </Field>
+                }
+
+                <Field>
+                    <Check TValue="bool" @bind-Checked="@model.EmailConfirmed">
+                        @L["EmailConfirmed"]
+                    </Check>
+                </Field>
+
+                <Field>
+                    <Check TValue="bool" @bind-Checked="@model.IsAdmin">
+                        @L["IsAdmin"]
+                    </Check>
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => userModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SaveUser">
+                    <Icon Name="IconName.Save" />
+                    @L["Save"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="roleModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["ManageRoles"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (selectedUser != null)
+                {
+                    <div class="mb-3">
+                        <h5>@selectedUser.UserName</h5>
+                    </div>
+
+                    @foreach (var role in allRoles)
+                    {
+                        <Field>
+                            <Check TValue="bool" 
+                                   Checked="@(selectedUserRoles.Contains(role.Name))" 
+                                   CheckedChanged="@((value) => OnRoleCheckedChanged(role.Name, value))">
+                                @role.Name
+                            </Check>
+                        </Field>
+                    }
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => roleModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SaveRoles">
+                    <Icon Name="IconName.Save" />
+                    @L["SaveRoles"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="confirmDeleteModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>@L["ConfirmDelete"]</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                @if (selectedUser != null)
+                {
+                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                    {
+                        <p>¿Está seguro de que desea eliminar al usuario <strong>@selectedUser.UserName</strong>?</p>
+                        <p>Esta acción eliminará todos los datos asociados al usuario y no se puede deshacer.</p>
+                    }
+                    else
+                    {
+                        <p>Are you sure you want to delete the user <strong>@selectedUser.UserName</strong>?</p>
+                        <p>This action will delete all data associated with the user and cannot be undone.</p>
+                    }
+                }
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="@(() => confirmDeleteModal.Hide())">
+                    @L["Cancel"]
+                </Button>
+                <Button Color="Color.Danger" Clicked="ConfirmDeleteUser">
+                    @L["Delete"]
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<ApplicationUser> users;
+    private List<ApplicationUser> filteredUsers;
+    private Dictionary<string, List<string>> userRoles = new Dictionary<string, List<string>>();
+    private List<IdentityRole> allRoles;
+    private string searchTerm = "";
+
+    private ApplicationUser selectedUser;
+    private List<string> selectedUserRoles = new List<string>();
+    private List<string> originalUserRoles = new List<string>();
+
+    private Modal userModal;
+    private Modal roleModal;
+    private Modal confirmDeleteModal;
+
+    private bool isEditMode = false;
+    private UserViewModel model = new UserViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            users = await UserManager.Users.ToListAsync();
+            filteredUsers = users;
+            
+            // Cargar roles para cada usuario
+            userRoles.Clear();
+            foreach (var user in users)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                userRoles[user.Id] = roles.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingUsers"]);
+            Console.Error.WriteLine($"Error loading users: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        try
+        {
+            allRoles = await RoleManager.Roles.ToListAsync();
+            
+            // Asegurarse de que existen los roles básicos
+            if (!allRoles.Any(r => r.Name == "Admin"))
+            {
+                await RoleManager.CreateAsync(new IdentityRole("Admin"));
+            }
+            
+            if (!allRoles.Any(r => r.Name == "User"))
+            {
+                await RoleManager.CreateAsync(new IdentityRole("User"));
+            }
+            
+            // Recargar la lista de roles
+            allRoles = await RoleManager.Roles.ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorLoadingRoles"]);
+            Console.Error.WriteLine($"Error loading roles: {ex.Message}");
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredUsers = users;
+        }
+        else
+        {
+            var term = searchTerm.ToLower();
+            filteredUsers = users.Where(u => 
+                (u.FirstName?.ToLower().Contains(term) ?? false) ||
+                (u.LastName?.ToLower().Contains(term) ?? false) ||
+                (u.Email?.ToLower().Contains(term) ?? false) ||
+                (u.PhoneNumber?.ToLower().Contains(term) ?? false)
+            ).ToList();
+        }
+    }
+
+    private void ClearFilter()
+    {
+        searchTerm = "";
+        filteredUsers = users;
+    }
+
+    private void ShowCreateUserModal()
+    {
+        isEditMode = false;
+        model = new UserViewModel
+        {
+            EmailConfirmed = true,
+            IsAdmin = false
+        };
+        userModal.Show();
+    }
+
+    private void EditUser(ApplicationUser user)
+    {
+        isEditMode = true;
+        model = new UserViewModel
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            WhatsAppNumber = user.WhatsAppNumber,
+            EmailConfirmed = user.EmailConfirmed,
+            IsAdmin = userRoles.ContainsKey(user.Id) && userRoles[user.Id].Contains("Admin")
+        };
+        userModal.Show();
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                ToastService.Warning(L["EmailRequired"]);
+                return;
+            }
+            
+            if (!isEditMode && string.IsNullOrWhiteSpace(model.Password))
+            {
+                ToastService.Warning(L["PasswordRequired"]);
+                return;
+            }
+            
+            if (isEditMode)
+            {
+                // Actualizar usuario existente
+                var user = await UserManager.FindByIdAsync(model.Id);
+                if (user == null)
+                {
+                    ToastService.Error(L["UserNotFound"]);
+                    return;
+                }
+                
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.PhoneNumber = model.PhoneNumber;
+                user.WhatsAppNumber = model.WhatsAppNumber;
+                user.EmailConfirmed = model.EmailConfirmed;
+                
+                var result = await UserManager.UpdateAsync(user);
+                
+                if (result.Succeeded)
+                {
+                    // Actualizar roles
+                    var isInAdminRole = await UserManager.IsInRoleAsync(user, "Admin");
+                    
+                    if (model.IsAdmin && !isInAdminRole)
+                    {
+                        await UserManager.AddToRoleAsync(user, "Admin");
+                    }
+                    else if (!model.IsAdmin && isInAdminRole)
+                    {
+                        await UserManager.RemoveFromRoleAsync(user, "Admin");
+                    }
+                    
+                    ToastService.Success(L["UserUpdatedSuccess"]);
+                    await LoadUsersAsync();
+                    userModal.Hide();
+                }
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ToastService.Error(error.Description);
+                    }
+                }
+            }
+            else
+            {
+                // Crear nuevo usuario
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    PhoneNumber = model.PhoneNumber,
+                    WhatsAppNumber = model.WhatsAppNumber,
+                    EmailConfirmed = model.EmailConfirmed
+                };
+                
+                var result = await UserManager.CreateAsync(user, model.Password);
+                
+                if (result.Succeeded)
+                {
+                    // Añadir rol de usuario por defecto
+                    await UserManager.AddToRoleAsync(user, "User");
+                    
+                    // Añadir rol de administrador si está marcado
+                    if (model.IsAdmin)
+                    {
+                        await UserManager.AddToRoleAsync(user, "Admin");
+                    }
+                    
+                    ToastService.Success(L["UserCreatedSuccess"]);
+                    await LoadUsersAsync();
+                    userModal.Hide();
+                }
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ToastService.Error(error.Description);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorSavingUser"]);
+            Console.Error.WriteLine($"Error saving user: {ex.Message}");
+        }
+    }
+
+    private async Task ManageRoles(ApplicationUser user)
+    {
+        selectedUser = user;
+        
+        // Obtener roles del usuario
+        var roles = await UserManager.GetRolesAsync(user);
+        selectedUserRoles = roles.ToList();
+        originalUserRoles = new List<string>(selectedUserRoles);
+        
+        roleModal.Show();
+    }
+
+    private void OnRoleCheckedChanged(string roleName, bool isChecked)
+    {
+        if (isChecked && !selectedUserRoles.Contains(roleName))
+        {
+            selectedUserRoles.Add(roleName);
+        }
+        else if (!isChecked && selectedUserRoles.Contains(roleName))
+        {
+            selectedUserRoles.Remove(roleName);
+        }
+    }
+
+    private async Task SaveRoles()
+    {
+        try
+        {
+            if (selectedUser == null)
+            {
+                return;
+            }
+            
+            // Roles a añadir (están en selectedUserRoles pero no en originalUserRoles)
+            var rolesToAdd = selectedUserRoles.Except(originalUserRoles).ToList();
+            
+            // Roles a eliminar (están en originalUserRoles pero no en selectedUserRoles)
+            var rolesToRemove = originalUserRoles.Except(selectedUserRoles).ToList();
+            
+            if (rolesToAdd.Any())
+            {
+                var result = await UserManager.AddToRolesAsync(selectedUser, rolesToAdd);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ToastService.Error(error.Description);
+                    }
+                    return;
+                }
+            }
+            
+            if (rolesToRemove.Any())
+            {
+                var result = await UserManager.RemoveFromRolesAsync(selectedUser, rolesToRemove);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ToastService.Error(error.Description);
+                    }
+                    return;
+                }
+            }
+            
+            ToastService.Success(L["RolesUpdatedSuccess"]);
+            await LoadUsersAsync();
+            roleModal.Hide();
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorSavingRoles"]);
+            Console.Error.WriteLine($"Error saving roles: {ex.Message}");
+        }
+    }
+
+    private void DeleteUser(ApplicationUser user)
+    {
+        selectedUser = user;
+        confirmDeleteModal.Show();
+    }
+
+    private async Task ConfirmDeleteUser()
+    {
+        try
+        {
+            if (selectedUser == null)
+            {
+                return;
+            }
+            
+            var result = await UserManager.DeleteAsync(selectedUser);
+            
+            if (result.Succeeded)
+            {
+                ToastService.Success(L["UserDeletedSuccess"]);
+                await LoadUsersAsync();
+                confirmDeleteModal.Hide();
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    ToastService.Error(error.Description);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Error(L["ErrorDeletingUser"]);
+            Console.Error.WriteLine($"Error deleting user: {ex.Message}");
+        }
+    }
+
+    private Color GetRoleBadgeColor(string role)
+    {
+        return role switch
+        {
+            "Admin" => Color.Primary,
+            "User" => Color.Secondary,
+            _ => Color.Light
+        };
+    }
+
+    // Modelo de vista para usuarios
+    private class UserViewModel
+    {
+        public string Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+        public string WhatsAppNumber { get; set; }
+        public string Password { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool IsAdmin { get; set; }
+    }
+}

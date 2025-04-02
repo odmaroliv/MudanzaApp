@@ -1,0 +1,133 @@
+﻿@* MudanzaApp/Components/Shared/QRCodeComponent.razor *@
+@inject IJSRuntime JSRuntime
+@inject IStringLocalizer<SharedResource> L
+
+<div class="qr-container">
+    @if (IsGenerating)
+    {
+        <div class="text-center">
+            <Spinner Color="Color.Primary" Size="Size.Medium" />
+            <p>@L["GeneratingQRCode"]</p>
+        </div>
+    }
+    else if (HasError)
+    {
+        <div class="text-center">
+            <Alert Color="Color.Danger">
+                <AlertMessage>@L["ErrorGeneratingQRCode"]</AlertMessage>
+            </Alert>
+        </div>
+    }
+    else
+    {
+        <div class="qr-content text-center">
+            <canvas id="@CanvasId" class="qr-canvas mx-auto d-block"></canvas>
+            @if (!string.IsNullOrEmpty(Text))
+            {
+                <div class="mt-2">
+                    <Button Color="Color.Secondary" Size="Size.Small" Clicked="CopyToClipboard">
+                        <Icon Name="IconName.Copy" />
+                        @L["CopyLink"]
+                    </Button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .qr-container {
+        width: 100%;
+        padding: 10px;
+    }
+    
+    .qr-canvas {
+        border-radius: 8px;
+        max-width: 100%;
+    }
+</style>
+
+@code {
+    [Parameter] public string Text { get; set; }
+    [Parameter] public EventCallback<bool> OnGenerated { get; set; }
+    [Parameter] public EventCallback<bool> OnCopied { get; set; }
+
+    private string CanvasId = $"qrcode_{Guid.NewGuid().ToString("N")}";
+    private bool IsGenerating = true;
+    private bool HasError = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || !string.IsNullOrEmpty(Text))
+        {
+            await GenerateQRCode();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Text))
+        {
+            await GenerateQRCode();
+        }
+    }
+
+    private async Task GenerateQRCode()
+    {
+        if (string.IsNullOrEmpty(Text))
+        {
+            HasError = true;
+            IsGenerating = false;
+            await OnGenerated.InvokeAsync(false);
+            return;
+        }
+
+        try
+        {
+            IsGenerating = true;
+            HasError = false;
+            StateHasChanged();
+
+            // Dar tiempo para que el canvas se renderice
+            await Task.Delay(100);
+
+            // Llamar a la función JavaScript para generar el código QR
+            var result = await JSRuntime.InvokeAsync<bool>("generateQRCode", CanvasId, Text);
+            
+            if (!result)
+            {
+                HasError = true;
+            }
+
+            await OnGenerated.InvokeAsync(!HasError);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error generating QR code: {ex.Message}");
+            HasError = true;
+            await OnGenerated.InvokeAsync(false);
+        }
+        finally
+        {
+            IsGenerating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (string.IsNullOrEmpty(Text))
+            return;
+
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<bool>("copyToClipboard", Text);
+            await OnCopied.InvokeAsync(result);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error copying to clipboard: {ex.Message}");
+            await OnCopied.InvokeAsync(false);
+        }
+    }
+}
