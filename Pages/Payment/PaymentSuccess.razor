@@ -1,5 +1,4 @@
-﻿
-@page "/payment/success"
+﻿@page "/payment/success"
 @inject IStringLocalizer<SharedResource> L
 @inject IPhotoCreditService PhotoCreditService
 @inject NavigationManager NavigationManager
@@ -8,98 +7,118 @@
 
 <PageTitle>@L["PaymentSuccess"] - @L["AppName"]</PageTitle>
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-                <Card Background="Background.Success" TextColor="TextColor.White" MClass="mb-4">   
-                <CardBody>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-3xl mx-auto">
+            <!-- Success card -->
+            <div class="bg-green-50 dark:bg-green-900/30 shadow-sm rounded-lg overflow-hidden mb-6">
+                <div class="px-4 py-5 sm:p-6">
                     <div class="text-center">
-                        <Icon Name="IconName.CheckCircle" Style="font-size: 4rem;" />
-                        <h2 class="mt-3">@L["PaymentSuccessful"]</h2>
-                        <p class="lead">
+                        <svg class="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h2 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">@L["PaymentSuccessful"]</h2>
+                    <p class="mt-2 text-lg text-gray-600 dark:text-gray-300">
+                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                        {
+                            <span>¡Su compra ha sido completada con éxito!</span>
+                        }
+                        else
+                        {
+                            <span>Your purchase has been completed successfully!</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details card -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:p-6">
+                @if (isLoading)
+                {
+                    <div class="flex justify-center py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+                    </div>
+                }
+                else if (hasError)
+                {
+                    <div class="rounded-md bg-amber-50 dark:bg-amber-900/30 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-amber-700 dark:text-amber-300">
+                                    @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+                                    {
+                                        <span>Hubo un problema al procesar su pago. Los créditos pueden tardar hasta 15 minutos en aparecer en su cuenta. Si después de este tiempo no ve sus créditos, contacte a soporte.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>There was an issue processing your payment. Credits may take up to 15 minutes to appear in your account. If after this time you don't see your credits, please contact support.</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center mb-8">
+                        <h4 class="text-lg font-medium text-gray-900 dark:text-white">@L["PurchaseDetails"]</h4>
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Credits"]:</p>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Amount"]:</p>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Date"]:</p>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["AvailableCredits"]:</p>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">@purchase?.CreditsAmount</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">$@(purchase?.Amount.ToString("N2"))</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">@(purchase?.CompletedAt?.ToLocalTime().ToString("g") ?? DateTime.Now.ToString("g"))</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">@availableCredits</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 dark:text-white">@L["WhatsNext"]</h4>
+                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
                             @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
                             {
-                                <span>¡Su compra ha sido completada con éxito!</span>
+                                <span>Sus créditos han sido añadidos a su cuenta y están listos para ser utilizados para analizar fotos de sus artículos de mudanza.</span>
                             }
                             else
                             {
-                                <span>Your purchase has been completed successfully!</span>
+                                <span>Your credits have been added to your account and are ready to be used for analyzing photos of your moving items.</span>
                             }
                         </p>
                     </div>
-                </CardBody>
-            </Card>
+                }
 
-            <Card>
-                <CardBody>
-                    @if (isLoading)
-                    {
-                        <div class="d-flex justify-content-center">
-                            <Spinner Color="Color.Primary" Size="Size.Large" />
-                        </div>
-                    }
-                    else if (hasError)
-                    {
-                        <Alert Color="Color.Warning">
-                            <AlertMessage>
-                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                                {
-                                    <span>Hubo un problema al procesar su pago. Los créditos pueden tardar hasta 15 minutos en aparecer en su cuenta. Si después de este tiempo no ve sus créditos, contacte a soporte.</span>
-                                }
-                                else
-                                {
-                                    <span>There was an issue processing your payment. Credits may take up to 15 minutes to appear in your account. If after this time you don't see your credits, please contact support.</span>
-                                }
-                            </AlertMessage>
-                        </Alert>
-                    }
-                    else
-                    {
-                        <div class="text-center mb-4">
-                            <h4>@L["PurchaseDetails"]</h4>
-                            <div class="row mt-4">
-                                <div class="col-md-6 text-md-end">
-                                    <p><strong>@L["Credits"]:</strong></p>
-                                    <p><strong>@L["Amount"]:</strong></p>
-                                    <p><strong>@L["Date"]:</strong></p>
-                                    <p><strong>@L["AvailableCredits"]:</strong></p>
-                                </div>
-                                <div class="col-md-6 text-md-start">
-                                    <p>@purchase?.CreditsAmount</p>
-                                    <p>$@(purchase?.Amount.ToString("N2"))</p>
-                                    <p>@(purchase?.CompletedAt?.ToLocalTime().ToString("g") ?? DateTime.Now.ToString("g"))</p>
-                                    <p>@availableCredits</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="text-center">
-                            <h4>@L["WhatsNext"]</h4>
-                            <p>
-                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                                {
-                                    <span>Sus créditos han sido añadidos a su cuenta y están listos para ser utilizados para analizar fotos de sus artículos de mudanza.</span>
-                                }
-                                else
-                                {
-                                    <span>Your credits have been added to your account and are ready to be used for analyzing photos of your moving items.</span>
-                                }
-                            </p>
-                        </div>
-                    }
-
-                    <div class="d-flex justify-content-center mt-4">
-                        <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/photo-credits"))">
-                            <Icon Name="IconName.CreditCard" />
-                            @L["BackToPhotoCredits"]
-                        </Button>
-                        <Button Color="Color.Secondary" Class="ms-2" Clicked="@(() => NavigationManager.NavigateTo("/my-moves"))">
-                            <Icon Name="IconName.Times" />
-                            @L["GoToMyMoves"]
-                        </Button>
-                    </div>
-                </CardBody>
-            </Card>
+                <div class="flex flex-col sm:flex-row justify-center mt-6 space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button type="button"
+                            @onclick="@(() => NavigationManager.NavigateTo("/photo-credits"))"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" />
+                        </svg>
+                        @L["BackToPhotoCredits"]
+                    </button>
+                    <button type="button"
+                            @onclick="@(() => NavigationManager.NavigateTo("/my-moves"))"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        @L["GoToMyMoves"]
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -127,7 +146,7 @@
 
             // Obtener la compra por ID de sesión
             purchase = await PhotoCreditService.GetPurchaseBySessionIdAsync(sessionId);
-            
+
             if (purchase == null || !purchase.IsCompleted)
             {
                 hasError = true;

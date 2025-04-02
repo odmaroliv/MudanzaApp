@@ -1,4 +1,4 @@
-﻿@* MudanzaApp/Components/Mudanza/AddItemByPhotoModal.razor *@
+﻿@* MudanzaApp/Components/Mudanza/AddItemModal.razor *@
 @inject IMudanzaService MudanzaService
 @inject IStorageService StorageService
 @inject IOpenAIService OpenAIService
@@ -8,528 +8,314 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 
-<Modal @ref="modal" Closed="OnModalClosed">
-    <ModalContent Size="ModalSize.Large">
-        <ModalHeader>
-            <ModalTitle>@L["AddItemByPhoto"]</ModalTitle>
-            <CloseButton />
-        </ModalHeader>
-        <ModalBody>
-            @if (photoCredits <= 0)
-            {
-                <Alert Color="Color.Warning">
-                    <AlertMessage>@L["NoPhotoCreditsAvailable"]</AlertMessage>
-                    <AlertDescription>
-                        @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
+<div id="addItemModal" class="fixed inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <!-- Modal panel -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                            @L["AddItem"]
+                        </h3>
+
+                        @if (isLoading)
                         {
-                            <p>No tiene créditos disponibles para analizar fotos. Compre más créditos para usar esta función.</p>
+                            <div class="flex justify-center my-8">
+                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+                                <p class="ml-3 text-gray-600 dark:text-gray-300">@loadingMessage</p>
+                            </div>
                         }
                         else
                         {
-                            <p>You don't have available credits to analyze photos. Purchase more credits to use this feature.</p>
-                        }
-                        <Button Color="Color.Primary" Clicked="@(() => NavigationManager.NavigateTo("/photo-credits"))">
-                            <Icon Name="IconName.ShoppingCart" />
-                            @L["BuyCredits"]
-                        </Button>
-                    </AlertDescription>
-                </Alert>
-            }
-            else
-            {
-                @if (currentStep == 1)
-                {
-                    <div class="mb-4">
-                        <Alert Color="Color.Info">
-                            <AlertMessage>@L["TakePhotoInstructions"]</AlertMessage>
-                            <AlertDescription>
-                                @if (CultureInfo.CurrentCulture.Name.StartsWith("es"))
-                                {
-                                    <ul>
-                                        <li>Tome una foto clara de <strong>un solo artículo</strong></li>
-                                        <li>Asegúrese de que el artículo sea fácilmente identificable</li>
-                                        <li>Evite fondos desordenados o complejos</li>
-                                        <li>Coloque el artículo centrado en la imagen</li>
-                                        <li>Utilice buena iluminación</li>
-                                    </ul>
-                                }
-                                else
-                                {
-                                    <ul>
-                                        <li>Take a clear photo of <strong>a single item</strong></li>
-                                        <li>Make sure the item is easily identifiable</li>
-                                        <li>Avoid cluttered or complex backgrounds</li>
-                                        <li>Place the item centered in the image</li>
-                                        <li>Use good lighting</li>
-                                    </ul>
-                                }
-                                <div class="text-center">
-                                    <Badge Color="Color.Info">@L["AvailablePhotoCredits"]: @photoCredits</Badge>
+                            <div class="mt-4">
+                                <div class="space-y-6">
+                                    <!-- Item Name -->
+                                    <div>
+                                        <label for="item-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            @L["ItemName"] <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="mt-1">
+                                            <input type="text"
+                                                   id="item-name"
+                                                   @bind="newItem.Name"
+                                                   class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                   placeholder="@L["ItemNamePlaceholder"]"
+                                                   required />
+                                        </div>
+                                    </div>
+
+                                    <!-- Category -->
+                                    <div>
+                                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            @L["Category"]
+                                        </label>
+                                        <div class="mt-1">
+                                            <select id="category"
+                                                    @bind="newItem.Category"
+                                                    class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md">
+                                                <option value="Furniture">@L["Category_Furniture"]</option>
+                                                <option value="Electronics">@L["Category_Electronics"]</option>
+                                                <option value="Kitchen">@L["Category_Kitchen"]</option>
+                                                <option value="Clothing">@L["Category_Clothing"]</option>
+                                                <option value="Decoration">@L["Category_Decoration"]</option>
+                                                <option value="Books">@L["Category_Books"]</option>
+                                                <option value="Tools">@L["Category_Tools"]</option>
+                                                <option value="Other">@L["Category_Other"]</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <!-- Quantity -->
+                                            <div class="mb-4">
+                                                <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    @L["Quantity"] <span class="text-red-500">*</span>
+                                                </label>
+                                                <div class="mt-1">
+                                                    <input type="number"
+                                                           id="quantity"
+                                                           @bind="newItem.Quantity"
+                                                           min="1"
+                                                           class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                </div>
+                                            </div>
+
+                                            <!-- Checkboxes -->
+                                            <div class="space-y-3">
+                                                <div class="flex items-start">
+                                                    <div class="flex items-center h-5">
+                                                        <input id="is-new"
+                                                               type="checkbox"
+                                                               @bind="newItem.IsNew"
+                                                               class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded" />
+                                                    </div>
+                                                    <div class="ml-3 text-sm">
+                                                        <label for="is-new" class="font-medium text-gray-700 dark:text-gray-300">@L["IsNew"]</label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-start">
+                                                    <div class="flex items-center h-5">
+                                                        <input id="is-hazmat"
+                                                               type="checkbox"
+                                                               @bind="newItem.IsHazmat"
+                                                               class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded" />
+                                                    </div>
+                                                    <div class="ml-3 text-sm">
+                                                        <label for="is-hazmat" class="font-medium text-gray-700 dark:text-gray-300">@L["IsHazmat"]</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <!-- Weight -->
+                                            <div class="mb-4">
+                                                <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    @L["Weight"]
+                                                </label>
+                                                <div class="mt-1 flex items-center">
+                                                    <div class="flex-grow">
+                                                        <input type="number"
+                                                               id="weight"
+                                                               @bind="newItem.Weight"
+                                                               min="0"
+                                                               step="0.1"
+                                                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                    </div>
+                                                    <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">@L["Pounds"]</span>
+                                                </div>
+                                                <div class="mt-1 flex items-center">
+                                                    <div class="flex items-center h-5">
+                                                        <input id="is-weight-total"
+                                                               type="checkbox"
+                                                               @bind="newItem.IsWeightTotal"
+                                                               class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded" />
+                                                    </div>
+                                                    <div class="ml-3 text-sm">
+                                                        <label for="is-weight-total" class="font-medium text-gray-700 dark:text-gray-300">@L["IsWeightTotal"]</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Dimensions -->
+                                            <div class="mb-4">
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    @L["Dimensions"]
+                                                </label>
+                                                <div class="mt-1 grid grid-cols-3 gap-2">
+                                                    <div>
+                                                        <input type="number"
+                                                               @bind="newItem.Length"
+                                                               min="0"
+                                                               step="0.1"
+                                                               placeholder="@L["Length"]"
+                                                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                    </div>
+                                                    <div>
+                                                        <input type="number"
+                                                               @bind="newItem.Width"
+                                                               min="0"
+                                                               step="0.1"
+                                                               placeholder="@L["Width"]"
+                                                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                    </div>
+                                                    <div>
+                                                        <input type="number"
+                                                               @bind="newItem.Height"
+                                                               min="0"
+                                                               step="0.1"
+                                                               placeholder="@L["Height"]"
+                                                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Declared Value -->
+                                            <div>
+                                                <label for="declared-value" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    @L["DeclaredValue"]
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                                    </div>
+                                                    <input type="number"
+                                                           id="declared-value"
+                                                           @bind="newItem.DeclaredValue"
+                                                           min="0"
+                                                           step="0.01"
+                                                           class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" />
+                                                </div>
+                                                <div class="mt-1 flex items-center">
+                                                    <div class="flex items-center h-5">
+                                                        <input id="is-value-total"
+                                                               type="checkbox"
+                                                               @bind="newItem.IsValueTotal"
+                                                               class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded" />
+                                                    </div>
+                                                    <div class="ml-3 text-sm">
+                                                        <label for="is-value-total" class="font-medium text-gray-700 dark:text-gray-300">@L["IsValueTotal"]</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Description -->
+                                    <div>
+                                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            @L["Description"]
+                                        </label>
+                                        <div class="mt-1">
+                                            <textarea id="description"
+                                                      @bind="newItem.Description"
+                                                      rows="2"
+                                                      class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                      placeholder="@L["DescriptionPlaceholder"]"></textarea>
+                                        </div>
+                                    </div>
                                 </div>
-                            </AlertDescription>
-                        </Alert>
+                            </div>
+                        }
                     </div>
-
-                    <div class="text-center mb-4">
-                        <h4>@L["CaptureItemPhoto"]</h4>
-                        <div class="mt-3">
-                            <Button Color="Color.Primary" Clicked="OpenCamera">
-                                <Icon Name="IconName.Camera" />
-                                @L["TakePhoto"]
-                            </Button>
-                            <span class="mx-3">@L["Or"]</span>
-                            <FileEdit Changed="OnFileSelected" />
-                        </div>
-                    </div>
-
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 dark:border-gray-600">
+                <button type="button"
+                        @onclick="AddItemAsync"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+                        disabled="@isLoading">
                     @if (isLoading)
                     {
-                        <div class="text-center mt-4">
-                            <Spinner Color="Color.Primary" Size="Size.Large" />
-                            <p class="mt-2">@loadingMessage</p>
-                        </div>
+                        <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent mr-2"></div>
+                        @L["Processing"]
                     }
-                    else if (!string.IsNullOrEmpty(previewUrl))
+                    else
                     {
-                        <div class="mt-4 text-center">
-                            <img src="@previewUrl" class="img-fluid rounded" style="max-height: 300px;" alt="Item preview" />
-                            <div class="mt-3">
-                                <Button Color="Color.Secondary" Clicked="ClearPhoto">
-                                    <Icon Name="IconName.Times" />
-                                    @L["ClearPhoto"]
-                                </Button>
-                                <Button Color="Color.Primary" Clicked="AnalyzePhoto">
-                                    <Icon Name="IconName.LaptopCode" />
-                                    @L["AnalyzePhoto"]
-                                </Button>
-                            </div>
-                        </div>
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        @L["AddItem"]
                     }
-                }
-                else if (currentStep == 2)
-                {
-                    <div class="text-center mb-4">
-                        <h4>@L["AIAnalysisResults"]</h4>
-                        <Badge Color="Color.Success">@L["PhotoCreditUsed"]</Badge>
-                    </div>
-
-                    <Validations @ref="validations" Model="@newItem" ValidateOnLoad="false">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <Field>
-                                    <FieldLabel>@L["ItemName"]</FieldLabel>
-                                    <Validation Validator="@ValidateName">
-                                        <TextEdit @bind-Text="@newItem.Name" Placeholder="@L["ItemNamePlaceholder"]">
-                                            <Feedback>
-                                                <ValidationError>@L["ItemNameRequired"]</ValidationError>
-                                            </Feedback>
-                                        </TextEdit>
-                                    </Validation>
-                                </Field>
-
-                                    <Field>
-                                        <FieldLabel>@L["Category"]</FieldLabel>
-                                        <Select TValue="string" @bind-SelectedValue="@newItem.Category">
-                                            <SelectItem Value="@("Furniture")">@L["Category_Furniture"]</SelectItem>
-                                            <SelectItem Value="@("Electronics")">@L["Category_Electronics"]</SelectItem>
-                                            <SelectItem Value="@("Kitchen")">@L["Category_Kitchen"]</SelectItem>
-                                            <SelectItem Value="@("Clothing")">@L["Category_Clothing"]</SelectItem>
-                                            <SelectItem Value="@("Decoration")">@L["Category_Decoration"]</SelectItem>
-                                            <SelectItem Value="@("Books")">@L["Category_Books"]</SelectItem>
-                                            <SelectItem Value="@("Tools")">@L["Category_Tools"]</SelectItem>
-                                            <SelectItem Value="@("Other")">@L["Category_Other"]</SelectItem>
-                                        </Select>
-                                    </Field>
-
-
-                                <Field>
-                                    <FieldLabel>@L["Quantity"]</FieldLabel>
-                                    <Validation Validator="@ValidateQuantity">
-                                        <NumericEdit TValue="int" @bind-Value="@newItem.Quantity" Min="1">
-                                            <Feedback>
-                                                <ValidationError>@L["QuantityInvalid"]</ValidationError>
-                                            </Feedback>
-                                        </NumericEdit>
-                                    </Validation>
-                                </Field>
-
-                                <Field>
-                                    <Check TValue="bool" @bind-Checked="@newItem.IsNew">
-                                        @L["IsNew"]
-                                    </Check>
-                                </Field>
-
-                                <Field>
-                                    <Check TValue="bool" @bind-Checked="@newItem.IsHazmat">
-                                        @L["IsHazmat"]
-                                    </Check>
-                                </Field>
-                            </div>
-
-                            <div class="col-md-6">
-                                <Field>
-                                    <FieldLabel>@L["Weight"]</FieldLabel>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <Validation Validator="@ValidateWeight">
-                                                <NumericEdit TValue="double" @bind-Value="@newItem.Weight" Min="0">
-                                                    <Feedback>
-                                                        <ValidationError>@L["WeightInvalid"]</ValidationError>
-                                                    </Feedback>
-                                                </NumericEdit>
-                                            </Validation>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <Check TValue="bool" @bind-Checked="@newItem.IsWeightTotal">
-                                                @L["IsWeightTotal"]
-                                            </Check>
-                                        </div>
-                                    </div>
-                                </Field>
-
-                                <Field>
-                                    <FieldLabel>@L["Dimensions"]</FieldLabel>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <NumericEdit TValue="double?" @bind-Value="@newItem.Length" Min="0" Placeholder="@L["Length"]" />
-                                        </div>
-                                        <div class="col-md-4">
-                                            <NumericEdit TValue="double?" @bind-Value="@newItem.Width" Min="0" Placeholder="@L["Width"]" />
-                                        </div>
-                                        <div class="col-md-4">
-                                            <NumericEdit TValue="double?" @bind-Value="@newItem.Height" Min="0" Placeholder="@L["Height"]" />
-                                        </div>
-                                    </div>
-                                </Field>
-
-                                <Field>
-                                    <FieldLabel>@L["DeclaredValue"]</FieldLabel>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <Validation Validator="@ValidateValue">
-                                                <Addons>
-                                                    <Addon AddonType="AddonType.Start">
-                                                        <AddonLabel>$</AddonLabel>
-                                                    </Addon>
-                                                    <Addon AddonType="AddonType.Body">
-                                                        <NumericEdit TValue="decimal" @bind-Value="@newItem.DeclaredValue" Min="0">
-                                                            <Feedback>
-                                                                <ValidationError>@L["ValueInvalid"]</ValidationError>
-                                                            </Feedback>
-                                                        </NumericEdit>
-                                                    </Addon>
-                                                </Addons>
-                                            </Validation>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <Check TValue="bool" @bind-Checked="@newItem.IsValueTotal">
-                                                @L["IsValueTotal"]
-                                            </Check>
-                                        </div>
-                                    </div>
-                                </Field>
-                                <Field>
-                                    <FieldLabel>@L["Description"]</FieldLabel>
-                                    <MemoEdit @bind-Text="@newItem.Description" Rows="2" Placeholder="@L["DescriptionPlaceholder"]" />
-                                </Field>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 text-center">
-                            <img src="@previewUrl" class="img-fluid rounded" style="max-height: 150px;" alt="Item preview" />
-                        </div>
-                    </Validations>
-                }
-            }
-        </ModalBody>
-        <ModalFooter>
-            @if (currentStep == 1)
-            {
-                <Button Color="Color.Secondary" Clicked="OnCancel">
+                </button>
+                <button type="button"
+                        @onclick="OnCancel"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                     @L["Cancel"]
-                </Button>
-            }
-            else if (currentStep == 2)
-            {
-                <Button Color="Color.Secondary" Clicked="@(() => currentStep = 1)">
-                    <Icon Name="IconName.ArrowLeft" />
-                    @L["Back"]
-                </Button>
-                <Button Color="Color.Primary" Clicked="AddItemAsync">
-                    <Icon Name="IconName.Save" />
-                    @L["AddItem"]
-                </Button>
-            }
-        </ModalFooter>
-    </ModalContent>
-</Modal>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter] public int MudanzaId { get; set; }
     [Parameter] public string UserId { get; set; }
-    [Parameter] public int PhotoCredits { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnItemAdded { get; set; }
-    [Parameter] public EventCallback<int> OnPhotoCreditsUsed { get; set; }
 
-    private Modal modal;
-    private Validations validations;
-    private int currentStep = 1;
-    private int photoCredits;
     private bool isLoading = false;
     private string loadingMessage = "";
-    private string previewUrl = "";
-    private IFileEntry selectedFile;
-    private byte[] fileData;
-    
-    private MudanzaItem newItem = new() { 
-        IsNew = false, 
-        Quantity = 1,
-        Category = "Furniture",
-        IsWeightTotal = false,
-        IsValueTotal = false,
-        Weight = 0,
-        DeclaredValue = 0
-    };
 
-    protected override void OnInitialized()
-    {
-        photoCredits = PhotoCredits;
-    }
+    private MudanzaItem newItem = new()
+        {
+            IsNew = false,
+            Quantity = 1,
+            Category = "Furniture",
+            IsWeightTotal = false,
+            IsValueTotal = false,
+            Weight = 0,
+            DeclaredValue = 0
+        };
 
     // Método público para mostrar el modal
     public void ShowModal()
     {
-        modal.Show();
-    }
-
-    private void ValidateName(ValidatorEventArgs e)
-    {
-        var value = Convert.ToString(e.Value);
-        e.Status = string.IsNullOrWhiteSpace(value) ? ValidationStatus.Error : ValidationStatus.Success;
-    }
-
-    private void ValidateQuantity(ValidatorEventArgs e)
-    {
-        var value = Convert.ToInt32(e.Value);
-        e.Status = value <= 0 ? ValidationStatus.Error : ValidationStatus.Success;
-    }
-
-    private void ValidateWeight(ValidatorEventArgs e)
-    {
-        var value = Convert.ToDouble(e.Value);
-        e.Status = value <= 0 ? ValidationStatus.Error : ValidationStatus.Success;
-    }
-
-    private void ValidateValue(ValidatorEventArgs e)
-    {
-        var value = Convert.ToDecimal(e.Value);
-        e.Status = value < 0 ? ValidationStatus.Error : ValidationStatus.Success;
-    }
-
-    private async Task OpenCamera()
-    {
-        try
-        {
-            var isMobile = await JSRuntime.InvokeAsync<bool>("isMobileDevice");
-            if (isMobile)
-            {
-                var inputId = Guid.NewGuid().ToString();
-                var success = await JSRuntime.InvokeAsync<bool>("openCamera", inputId);
-                if (!success)
-                {
-                    ToastService.Error(L["ErrorAccessingCamera"]);
-                }
-            }
-            else
-            {
-                ToastService.Info(L["CameraDesktopInfo"]);
-            }
-        }
-        catch (Exception ex)
-        {
-            ToastService.Error(L["ErrorAccessingCamera"]);
-            Console.Error.WriteLine($"Error accessing camera: {ex.Message}");
-        }
-    }
-
-    private async Task OnFileSelected(FileChangedEventArgs e)
-    {
-        try
-        {
-            if (e.Files.Length == 0)
-            {
-                selectedFile = null;
-                previewUrl = "";
-                fileData = null;
-                return;
-            }
-
-            selectedFile = e.Files[0];
-            if (!selectedFile.Type.StartsWith("image/"))
-            {
-                ToastService.Error(L["OnlyImagesAllowed"]);
-                selectedFile = null;
-                previewUrl = "";
-                fileData = null;
-                return;
-            }
-            
-            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            using var memoryStream = new MemoryStream();
-            await stream.CopyToAsync(memoryStream);
-            fileData = memoryStream.ToArray();
-            previewUrl = $"data:{selectedFile.Type};base64,{Convert.ToBase64String(fileData)}";
-        }
-        catch (Exception ex)
-        {
-            ToastService.Error(L["ErrorProcessingFile"]);
-            Console.Error.WriteLine($"Error processing file: {ex.Message}");
-        }
-    }
-
-    private void ClearPhoto()
-    {
-        selectedFile = null;
-        previewUrl = "";
-        fileData = null;
-    }
-
-    private async Task AnalyzePhoto()
-    {
-        if (fileData == null || fileData.Length == 0)
-        {
-            ToastService.Warning(L["NoPhotoSelected"]);
-            return;
-        }
-        
-        if (photoCredits <= 0)
-        {
-            ToastService.Warning(L["NoPhotoCreditsAvailable"]);
-            return;
-        }
-        
-        try
-        {
-            isLoading = true;
-            loadingMessage = L["AnalyzingPhoto"];
-            
-            var creditResult = await PhotoCreditService.UsePhotoCreditsAsync(UserId);
-            if (!creditResult)
-            {
-                ToastService.Error(L["ErrorUsingPhotoCredits"]);
-                isLoading = false;
-                return;
-            }
-            
-            photoCredits--;
-            await OnPhotoCreditsUsed.InvokeAsync(photoCredits);
-            
-            loadingMessage = L["AIIsAnalyzingYourPhoto"];
-            var analysisResult = await OpenAIService.AnalyzeItemImageAsync(fileData);
-            
-            if (!analysisResult.Success)
-            {
-                ToastService.Error(analysisResult.ErrorMessage ?? L["ErrorAnalyzingPhoto"]);
-                isLoading = false;
-                return;
-            }
-            
-            newItem.Name = analysisResult.ItemName;
-            newItem.Description = analysisResult.Description;
-            
-            if (!string.IsNullOrEmpty(analysisResult.Category))
-            {
-                newItem.Category = MapCategory(analysisResult.Category);
-            }
-            
-            if (analysisResult.EstimatedQuantity.HasValue && analysisResult.EstimatedQuantity.Value > 0)
-            {
-                newItem.Quantity = analysisResult.EstimatedQuantity.Value;
-            }
-            
-            loadingMessage = L["UploadingPhoto"];
-            var fileName = $"{Path.GetRandomFileName()}.jpg";
-            var photoUrl = await StorageService.UploadFileAsync(
-                fileData,
-                fileName,
-                "image/jpeg");
-                
-            newItem.PhotoUrl = photoUrl;
-            
-            currentStep = 2;
-        }
-        catch (Exception ex)
-        {
-            ToastService.Error(L["ErrorAnalyzingPhoto"]);
-            Console.Error.WriteLine($"Error analyzing photo: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private string MapCategory(string openAiCategory)
-    {
-        if (string.IsNullOrEmpty(openAiCategory))
-            return "Other";
-            
-        var category = openAiCategory.ToLowerInvariant();
-        
-        if (category.Contains("furniture") || category.Contains("mueble"))
-            return "Furniture";
-            
-        if (category.Contains("electronic") || category.Contains("electrónic"))
-            return "Electronics";
-            
-        if (category.Contains("kitchen") || category.Contains("cocina"))
-            return "Kitchen";
-            
-        if (category.Contains("clothing") || category.Contains("ropa") || category.Contains("cloth"))
-            return "Clothing";
-            
-        if (category.Contains("decoration") || category.Contains("decoración") || category.Contains("decor"))
-            return "Decoration";
-            
-        if (category.Contains("book") || category.Contains("libro"))
-            return "Books";
-            
-        if (category.Contains("tool") || category.Contains("herramienta"))
-            return "Tools";
-            
-        return "Other";
+        JSRuntime.InvokeVoidAsync("openModal", "addItemModal");
     }
 
     private async Task AddItemAsync()
     {
-        if (!(await validations.ValidateAll()))
+        // Validación básica
+        if (string.IsNullOrWhiteSpace(newItem.Name))
         {
-            ToastService.Warning(L["PleaseCompleteRequiredFields"]);
+            ToastService.Warning(L["ItemNameRequired"]);
             return;
         }
-        
+
+        if (newItem.Quantity <= 0)
+        {
+            ToastService.Warning(L["QuantityInvalid"]);
+            return;
+        }
+
         try
         {
             isLoading = true;
             loadingMessage = L["SavingItem"];
-            
+
             newItem.MudanzaId = MudanzaId;
             newItem.CreatedBy = UserId;
             newItem.CreatedAt = DateTime.UtcNow;
-            
+
             var result = await MudanzaService.AddItemAsync(newItem, UserId);
-            
+
             if (result != null)
             {
                 ToastService.Success(L["ItemAddedSuccess"]);
                 await OnItemAdded.InvokeAsync();
-                
-                if (photoCredits > 0)
-                {
-                    currentStep = 1;
-                    newItem = new() { 
-                        IsNew = false, 
+
+                // Reset form for next item
+                newItem = new()
+                    {
+                        IsNew = false,
                         Quantity = 1,
                         Category = "Furniture",
                         IsWeightTotal = false,
@@ -537,13 +323,9 @@
                         Weight = 0,
                         DeclaredValue = 0
                     };
-                    previewUrl = "";
-                    fileData = null;
-                }
-                else
-                {
-                    modal.Hide();
-                }
+
+                await JSRuntime.InvokeVoidAsync("closeModal", "addItemModal");
+                await OnClose.InvokeAsync();
             }
             else
             {
@@ -561,13 +343,9 @@
         }
     }
 
-    private void OnCancel()
+    private async Task OnCancel()
     {
-        modal.Hide();
-    }
-
-    private async Task OnModalClosed()
-    {
+        await JSRuntime.InvokeVoidAsync("closeModal", "addItemModal");
         await OnClose.InvokeAsync();
     }
 }
